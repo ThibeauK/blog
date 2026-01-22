@@ -1,0 +1,67 @@
+body{
+    background-image: url(https://blob.gifcities.org/gifcities/3YQ4VWTCQ4ZEYCMNCYQO23JASLTRTL5V.gif);
+}
+
+#container{
+    background-color: black;
+    color: white;
+    padding: 3%;
+    border: 5px solid cyan;
+    font-family: Comic Sans MS;
+    text-align: center;
+    width: 70%;
+}
+
+#doos{
+    display: flex;
+    margin: 5% 0;
+    gap: 1%;
+    justify-content: center;
+}
+
+.reclame{
+    width: 10%;
+    text-align: center;
+}
+
+.reclame img{
+    width: 100%;
+}
+
+#home{
+    text-align: center;
+}
+
+nav ul{
+    display: flex;
+    gap: 1%;
+}
+
+nav ul li{
+    list-style: none;
+}
+
+nav ul li a{
+    color: yellow
+}
+
+.datum{
+    color: yellow;
+    font-weight: bold;
+}
+
+.post{
+    border: 1px solid yellow;
+    margin: 3% 0;
+    padding: 1%;
+    text-align: left;
+}
+
+
+hr{
+    border: 1px dashed greenyellow;
+}
+
+h3{
+    text-decoration: underline;
+}
