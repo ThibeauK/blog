@@ -1,0 +1,227 @@
+*{
+    font-family: 'Open Sans';
+    font-weight: normal;
+}
+
+body{
+    background-color: white;
+    color: black;
+    margin: 0 2%;
+    overflow: scroll;
+}
+
+hr{
+    border: none;
+    border-bottom: 1px solid black
+}
+
+header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+h2{
+    line-height: 20px;
+}
+
+h2:hover{
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+h6{
+    margin: 0;
+}
+
+em{
+    font-style: normal;
+    letter-spacing: 0.4px;
+}
+
+#container{
+    display: flex;
+}
+
+#containers{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+#containers.loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.6; /* dim while loading */
+}
+
+#containers.loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: rgba(255,255,255,0.4);
+}
+
+#containers.loading::before {
+  content: "loading...";
+  padding: 0% 1%;
+  text-decoration: underline;
+}
+
+#nav{
+    display: flex;
+    flex-direction: column;
+    width: 20%;
+    border-right: 1px solid black;
+    font-size: 18px;
+    gap: 5px;
+    height: 100%;
+}
+
+#nav div{
+    width: fit-content;
+}
+
+.nav-item:hover{
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.drive-folder{
+    padding-left: 10px;
+    border-left: 1px solid black;
+    margin-bottom: 10px;
+}
+
+.drive-folder:hover{
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+#hamburger{
+    font-family:'Courier New', Courier, monospace;
+    display: none;
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+    transform: scale(2.5,1);
+    font-weight: bold;
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+#hamburger:hover{
+    rotate: 90deg;
+    transform: scale(2,1.1);
+    border-bottom: 0px;
+    border-top: 0px;
+    border-left: 1px solid black;
+}
+
+#cover-container{
+    display: flex;
+    padding: 0% 1%;
+}
+
+.book-cover{
+    width: 49.7%;
+    padding-bottom: 49.7%;
+    margin-bottom: 0.5%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+#description-container{
+    padding: 0% 0% 2.5% 1%;
+    display: none;
+    color: grey;
+}
+
+#image-container{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5%;
+    align-items: center;
+    justify-content: center;
+    padding: 0% 1%;
+}
+
+#image-container div{
+    width: 22.5%;
+    padding-bottom: 22.5%;
+    margin-bottom: 0.5%;
+    height: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    flex: 20%;
+}
+
+.open{
+    display: flex !important;
+}
+
+.close{
+    display: none !important;
+}
+
+#lightbox{
+    display: none;
+    width: 100%;
+    gap: 1%;
+    height: 85vh
+}
+
+.lightbox__content{
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    width: 100%;
+}
+
+.lightbox__img{
+    margin: 0 auto;
+    padding: 10%;
+    height: 60%;
+}
+
+.lightbox__nav{
+    text-align: center;
+}
+
+button{
+    background-color: white;
+    color: black;
+    border: 0px;
+    border-bottom: 1px solid black;
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+button:hover{
+    cursor: pointer;
+}
+
+
+@media screen and (width <= 800px){
+    #container{
+        flex-direction: column;
+    }
+
+    #nav{
+        width: 100%;
+        border-right: none;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid black;
+    }
+
+    #hamburger{
+        display: inline-block;
+    }
+
+    #image-container{
+        width: 100%;
+    }
+}
