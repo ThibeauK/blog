@@ -1,0 +1,3 @@
+window.CONFIG = {
+  API_KEY: "REPLACE_ME"
+};
