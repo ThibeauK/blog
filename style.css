@@ -6,13 +6,8 @@
 body{
     background-color: white;
     color: black;
-    margin: 0 2%;
+    margin: 0 1em;
     overflow: scroll;
-}
-
-hr{
-    border: none;
-    border-bottom: 1px solid black
 }
 
 header{
@@ -22,12 +17,15 @@ header{
 }
 
 h2{
-    line-height: 20px;
+    font-size: 36px;
+    line-height: 30px;
+    margin-top: 20px;
 }
 
 h2:hover{
     cursor: pointer;
     text-decoration: underline;
+    text-decoration-style: dotted;
 }
 
 h6{
@@ -39,20 +37,37 @@ em{
     letter-spacing: 0.4px;
 }
 
+hr{
+    border: 0px;
+    border-right: 1px;
+    border-style: dotted;
+    color: black;
+    margin: 0;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+}
+
+#container-hr{
+    display: none;
+}
+
 #container{
     display: flex;
+    gap: 2%;
 }
 
 #containers{
     display: flex;
     flex-direction: column;
-    width: 100%;
+    width: 80%;
+    padding: 1em 0;
 }
 
 #containers.loading {
   position: relative;
   pointer-events: none;
-  opacity: 0.6; /* dim while loading */
+  opacity: 0.6; 
 }
 
 #containers.loading::after {
@@ -67,16 +82,18 @@ em{
   content: "loading...";
   padding: 0% 1%;
   text-decoration: underline;
+  text-decoration-style: dotted;
 }
 
 #nav{
     display: flex;
+    position: sticky;
+    top: 0;
+    position: -webkit-sticky; 
     flex-direction: column;
     width: 20%;
-    border-right: 1px solid black;
-    font-size: 18px;
-    gap: 5px;
-    height: 100%;
+    gap: 30px;
+    align-self: flex-start; 
 }
 
 #nav div{
@@ -86,17 +103,46 @@ em{
 .nav-item:hover{
     cursor: pointer;
     text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+#info{
+    position: fixed;
+    bottom: 1em;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#info a{
+    color: grey;
+    text-decoration-style: dotted;
+    font-size: 15px;
+}
+
+#info a:hover{
+    color: black;
+}
+
+.static-nav{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .drive-folder{
     padding-left: 10px;
-    border-left: 1px solid black;
+    border-left: 1px dotted black;
     margin-bottom: 10px;
+    color: gray;
+    font-size: 15px;
 }
 
 .drive-folder:hover{
     cursor: pointer;
     text-decoration: underline;
+    text-decoration-style: dotted;
+    color: black;
 }
 
 #hamburger{
@@ -118,18 +164,42 @@ em{
     border-left: 1px solid black;
 }
 
+.book-view{
+    display: flex !important;
+    flex-direction: row !important;
+    padding: 0 !important;
+    gap: 1em;
+
+}
+
 #cover-container{
-    display: flex;
-    padding: 0% 1%;
+    display: none;
+    width: 50%;
+    flex-direction: column;
+    gap: 1em;
+    position: -webkit-sticky; 
+    position: sticky;
+    top: 0;
+    align-self: flex-start; 
 }
 
 .book-cover{
-    width: 49.7%;
-    padding-bottom: 49.7%;
-    margin-bottom: 0.5%;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
+    width: 75%;
+    padding-top: 1em;
+}
+
+.book-spreads{
+    width: 50%;
+    flex-direction: column !important;
+    flex-wrap: unset !important;
+    justify-content: start !important;
+    gap: 1em !important;
+    padding-bottom: 1em;
+}
+
+.spread{
+    width: 100% !important;
+    padding-bottom: 0 !important;
 }
 
 #description-container{
@@ -144,7 +214,7 @@ em{
     gap: 0.5%;
     align-items: center;
     justify-content: center;
-    padding: 0% 1%;
+    padding-top: 10px;
 }
 
 #image-container div{
@@ -168,26 +238,56 @@ em{
 
 #lightbox{
     display: none;
-    width: 100%;
-    gap: 1%;
-    height: 85vh
+    position: sticky;
+    top: 0;
+    width: 80%;
+    flex-direction: column;
+    position: -webkit-sticky; 
+    position: sticky;
+    align-self: flex-start; 
 }
 
 .lightbox__content{
     display: flex;
     justify-content: space-between;
     flex-direction: column;
-    width: 100%;
+    height: 46vw;
+    padding: 1em;
 }
 
 .lightbox__img{
     margin: 0 auto;
-    padding: 10%;
-    height: 60%;
+    height: 70%;
 }
 
 .lightbox__nav{
     text-align: center;
+}
+
+#buttons{
+    position: absolute;
+    width: 100%;
+    display: flex;
+    margin: 80px 0;
+}
+
+#back-button{
+    height: 77vh;
+    width: 50%;
+   
+}
+
+#back-button:hover{
+    cursor:w-resize;
+}
+
+#forward-button{
+    height: 77vh;
+    width: 50%;
+}
+
+#forward-button:hover{
+    cursor: e-resize;
 }
 
 button{
@@ -195,6 +295,7 @@ button{
     color: black;
     border: 0px;
     border-bottom: 1px solid black;
+    border-style: dotted;
     margin-right: 10px;
     font-size: 20px;
 }

@@ -1,6 +1,9 @@
-// js/index.js
 const ROOT_FOLDER_ID = "1ZDYPViPemR14Xgv8vQZHQSGmWjeqkr1Z";
-const API_KEY = "AIzaSyAxgoUNtLBvRqv3jl8V_WK6TUQByXHRrb8";
+const API_KEY = (window.CONFIG && window.CONFIG.API_KEY) || '';
+
+if (!API_KEY) {
+  console.warn('API key missing. Drive calls will fail. Add API_KEY before building.');
+}
 
 const driveNavProjects = document.getElementById("drive_nav_projects");
 const driveNavBooks = document.getElementById("drive_nav_books");
@@ -9,6 +12,7 @@ const lightbox = document.getElementById("lightbox");
 const allcontainers = document.getElementById("containers");
 const container = document.getElementById("image-container");
 const coverContainer = document.getElementById("cover-container");
+const hrContainer = document.getElementById("container-hr");
 const descriptionContainer = document.getElementById("description-container");
 
 const staticPortfolio = document.getElementById("nav-portfolio");
@@ -20,7 +24,6 @@ let currentImages = [];
 let currentIndex = 0;
 const rootFolderMap = {};
 
-// Utility
 function escapeHtml(str = "") {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -91,13 +94,13 @@ async function showSubfolders(parentId, targetNavEl, options = {}) {
     console.error("Error listing subfolders:", err);
   }
 }
-// Helper: preload an image URL (returns a Promise that resolves on load or rejects on error)
+
 function preloadImage(src) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     if (!src) return resolve({ src, ok: false });
     const img = new Image();
     img.onload = () => resolve({ src, ok: true });
-    img.onerror = () => resolve({ src, ok: false }); // resolve even on error so Promise.allSettled can continue
+    img.onerror = () => resolve({ src, ok: false });
     img.src = src;
   });
 }
@@ -106,8 +109,10 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
   container.innerHTML = "";
   coverContainer.innerHTML = "";
   descriptionContainer.innerHTML = "";
+  coverContainer.classList.remove("open");
   allcontainers.classList.add("loading");
   descriptionContainer.classList.remove("open");
+  hrContainer.classList.remove("open");
   lightbox.classList.remove("open");
   container.classList.remove("close");
   allcontainers.classList.remove("close");
@@ -148,7 +153,6 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       return mt.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name || "");
     });
 
-    // determine cover if it's a book
     let coverFile = null;
     if (options.isBook) {
       const coverIdx = imageFiles.findIndex(f => /^cover\.(jpg|jpeg|png|webp)$/i.test((f.name || "")));
@@ -161,14 +165,13 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       }
     }
 
-    // preload cover & thumbs & text (you can keep your existing preload logic)
     const preloadPromises = [];
     let coverUrl = null;
     if (coverFile) {
       coverUrl = `https://drive.google.com/thumbnail?id=${coverFile.id}&sz=w600`;
       preloadPromises.push(preloadImage(coverUrl));
     }
-    const thumbUrls = imageFiles.map(f => `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`);
+    const thumbUrls = imageFiles.map(f => `https://drive.google.com/thumbnail?id=${f.id}&sz=${options.isBook ? 'w800' : 'w400'}`);
     thumbUrls.forEach(u => preloadPromises.push(preloadImage(u)));
 
     let textFetchPromise = null;
@@ -189,24 +192,20 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
 
     await Promise.allSettled(preloadPromises);
 
-    // Build currentImages once and only once (cover first if present)
+    allcontainers.classList.toggle('book-view', !!options.isBook);
+    container.classList.toggle('book-spreads', !!options.isBook);
+
+    currentImages = imageFiles.slice();
+
     if (coverFile) {
-      currentImages = [coverFile, ...imageFiles];
-    } else {
-      currentImages = imageFiles.slice();
+      const imgEl = document.createElement("img");
+      imgEl.className = "book-cover";
+      imgEl.src = coverUrl;
+      imgEl.alt = coverFile.name || "Cover";
+      imgEl.loading = "lazy";
+      coverContainer.appendChild(imgEl);
     }
 
-    // Render cover (cover click should open index 0)
-    if (coverFile) {
-      const el = document.createElement("div");
-      el.className = "book-cover";
-      el.style.backgroundImage = `url(${coverUrl})`;
-      el.title = coverFile.name;
-      el.onclick = () => openLightbox(0); // cover is index 0 in currentImages
-      coverContainer.appendChild(el);
-    }
-
-    // Render text if fetched
     if (chosenTextFile && textFetchPromise) {
       try {
         const maybe = await textFetchPromise;
@@ -215,23 +214,48 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
           textEl.className = "folder-description";
           textEl.innerHTML = escapeHtml(maybe.text).replace(/\n/g, "<br>");
           descriptionContainer.classList.add("open");
+          hrContainer.classList.add("open");
           descriptionContainer.appendChild(textEl);
+
+          if (options.isBook) {
+            coverContainer.appendChild(descriptionContainer);
+          } else {
+            allcontainers.appendChild(descriptionContainer);
+          }
         }
       } catch (e) {
         console.error("Failed to render text file:", e);
       }
+    } else {
+      if (options.isBook) {
+        coverContainer.appendChild(descriptionContainer);
+      } else {
+        allcontainers.appendChild(descriptionContainer);
+      }
     }
 
     container.innerHTML = "";
-    const coverOffset = coverFile ? 1 : 0;
+    const isBookView = !!options.isBook;
+
     imageFiles.forEach((file, idx) => {
-      const thumb = document.createElement("div");
-      thumb.className = "thumb";
-      thumb.dataset.index = idx;
-      thumb.title = file.name;
-      thumb.style.backgroundImage = `url(https://drive.google.com/thumbnail?id=${file.id}&sz=w400)`;
-      thumb.onclick = () => openLightbox(idx + coverOffset);
-      container.appendChild(thumb);
+      if (isBookView) {
+        const img = document.createElement("img");
+        img.className = "spread noclick";
+        img.title = file.name;
+        img.alt = file.name || "";
+        img.src = `https://drive.google.com/thumbnail?id=${file.id}&sz=w800`;
+        img.loading = "lazy";
+        coverContainer.classList.add("open");
+        container.appendChild(img);
+      } else {
+        const tile = document.createElement("div");
+        tile.className = "thumb";
+        tile.dataset.index = idx;
+        tile.title = file.name;
+        tile.style.backgroundImage = `url(https://drive.google.com/thumbnail?id=${file.id}&sz=w400)`;
+        tile.onclick = () => openLightbox(idx);
+        container.appendChild(tile);
+      }
     });
 
   } catch (err) {
@@ -240,7 +264,6 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
     allcontainers.classList.remove("loading");
   }
 }
-
 
 function openLightbox(index) {
   currentIndex = index;
@@ -281,9 +304,12 @@ function renderLightbox() {
   const fullUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1200`;
 
   lightbox.innerHTML = `
-    <div class="lightbox__overlay" data-role="overlay"></div>
     <div class="lightbox__content" role="dialog" aria-modal="true" aria-label="${escapeHtml(file.name)}">
       <div class="lightbox__controls">
+        <div id="buttons">
+          <div id="back-button" onclick="showPrev()"></div>
+          <div id="forward-button" onclick="showNext()"></div>
+        </div>
         <button class="btn" data-role="close" aria-label="Close">x</button>
       </div>
       <img class="lightbox__img" src="${fullUrl}" alt="${escapeHtml(file.name)}" />
@@ -294,7 +320,6 @@ function renderLightbox() {
     </div>
   `;
 
-  lightbox.querySelector('[data-role="overlay"]').addEventListener("click", closeLightbox);
   lightbox.querySelector('[data-role="close"]').addEventListener("click", closeLightbox);
   lightbox.querySelector('[data-role="prev"]').addEventListener("click", showPrev);
   lightbox.querySelector('[data-role="next"]').addEventListener("click", showNext);
@@ -320,6 +345,7 @@ function toggleSubfolderNav(folderName, targetNavEl, staticEl, otherNavEl) {
   if (targetNavEl.children.length) {
     targetNavEl.innerHTML = "";
     coverContainer.innerHTML = "";
+    allcontainers.appendChild(descriptionContainer);
     descriptionContainer.innerHTML = "";
     container.innerHTML = "";
     return;
@@ -344,11 +370,12 @@ async function init() {
     coverContainer.innerHTML = "";
     descriptionContainer.innerHTML = "";
     descriptionContainer.classList.remove("open");
+    hrContainer.classList.remove("open");
     lightbox.classList.remove("open");
     container.classList.remove("close");
     allcontainers.classList.remove("close");
 
-    loadFolder(ROOT_FOLDER_ID, { isBook: false, showText: false }); // portfolio: don't auto-show text
+    loadFolder(ROOT_FOLDER_ID, { isBook: false, showText: false });
   };
 
   staticProjects.onclick = () => {
@@ -365,6 +392,7 @@ async function init() {
     coverContainer.innerHTML = "";
     descriptionContainer.innerHTML = "";
     descriptionContainer.classList.remove("open");
+    hrContainer.classList.remove("open");
     lightbox.classList.remove("open");
     container.classList.remove("close");
     allcontainers.classList.remove("close");

@@ -9,29 +9,23 @@
 </head>
 <body>
 
-<header>
-  <div>
-    <h2 onclick="history.go(0);">
-      Tom D'haenens<br>
-      <em>photography</em>
-    </h2>
-
-  </div>
   <div>
     <a id="hamburger">—</a>
   </div>
-</header>
-
-<hr>
 
 <div id="container">
-
+  <hr>
   <div id="nav">
+        <h2 onclick="history.go(0);">
+      Tom D'haenens<br>
+      <em>photography</em>
+    </h2p>
 
       <h6>International award winning Photographer<br>
-Industrial-architectural-Offshore Photography
+Industrial-architectural-Offshore Photography<br>
 Publisher</h6>
     <div id="static-nav" class="static-nav">
+      <div>
       <div id="nav-portfolio" class="nav-item">Portfolio</div>
 
       <div id="nav-projects" class="nav-item">Projects</div>
@@ -39,21 +33,32 @@ Publisher</h6>
 
       <div id="nav-books" class="nav-item">Books</div>
       <nav id="drive_nav_books" class="drive-nav"></nav>
+      </div>
 
+      <div id="info">
       <div id="nav-info" class="nav-item">Info & Contact</div>
+      <a href="">+32 475 25 82 15</a>
+      <a href="mailto:tom@viewvision.be">tom@viewvision.be</a>
+      </div>
     </div>
   </div>
 
+  <hr>
+
   <div id="containers">
-    <div id="description-container" class="description-container"></div>
     <div id="cover-container" class="cover-container"></div>
+    <hr id="container-hr">
     <div id="image-container" class="image-grid"></div>
+    <div id="description-container" class="description-container"></div>
   </div>
 
-  <div id="lightbox"></div>
+  <div id="lightbox">
+  </div>
 
 </div>
 
+<script src="js/config.js"></script>
 <script src="js/index.js"></script>
+
 </body>
 </html>
