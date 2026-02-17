@@ -1,0 +1,328 @@
+*{
+    font-family: 'Open Sans';
+    font-weight: normal;
+}
+
+body{
+    background-color: white;
+    color: black;
+    margin: 0 1em;
+    overflow: scroll;
+}
+
+header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+h2{
+    font-size: 36px;
+    line-height: 30px;
+    margin-top: 20px;
+}
+
+h2:hover{
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+h6{
+    margin: 0;
+}
+
+em{
+    font-style: normal;
+    letter-spacing: 0.4px;
+}
+
+hr{
+    border: 0px;
+    border-right: 1px;
+    border-style: dotted;
+    color: black;
+    margin: 0;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+}
+
+#container-hr{
+    display: none;
+}
+
+#container{
+    display: flex;
+    gap: 2%;
+}
+
+#containers{
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    padding: 1em 0;
+}
+
+#containers.loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.6; 
+}
+
+#containers.loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: rgba(255,255,255,0.4);
+}
+
+#containers.loading::before {
+  content: "loading...";
+  padding: 0% 1%;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+#nav{
+    display: flex;
+    position: sticky;
+    top: 0;
+    position: -webkit-sticky; 
+    flex-direction: column;
+    width: 20%;
+    gap: 30px;
+    align-self: flex-start; 
+}
+
+#nav div{
+    width: fit-content;
+}
+
+.nav-item:hover{
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+#info{
+    position: fixed;
+    bottom: 1em;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#info a{
+    color: grey;
+    text-decoration-style: dotted;
+    font-size: 15px;
+}
+
+#info a:hover{
+    color: black;
+}
+
+.static-nav{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.drive-folder{
+    padding-left: 10px;
+    border-left: 1px dotted black;
+    margin-bottom: 10px;
+    color: gray;
+    font-size: 15px;
+}
+
+.drive-folder:hover{
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    color: black;
+}
+
+#hamburger{
+    font-family:'Courier New', Courier, monospace;
+    display: none;
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+    transform: scale(2.5,1);
+    font-weight: bold;
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+#hamburger:hover{
+    rotate: 90deg;
+    transform: scale(2,1.1);
+    border-bottom: 0px;
+    border-top: 0px;
+    border-left: 1px solid black;
+}
+
+.book-view{
+    display: flex !important;
+    flex-direction: row !important;
+    padding: 0 !important;
+    gap: 1em;
+
+}
+
+#cover-container{
+    display: none;
+    width: 50%;
+    flex-direction: column;
+    gap: 1em;
+    position: -webkit-sticky; 
+    position: sticky;
+    top: 0;
+    align-self: flex-start; 
+}
+
+.book-cover{
+    width: 75%;
+    padding-top: 1em;
+}
+
+.book-spreads{
+    width: 50%;
+    flex-direction: column !important;
+    flex-wrap: unset !important;
+    justify-content: start !important;
+    gap: 1em !important;
+    padding-bottom: 1em;
+}
+
+.spread{
+    width: 100% !important;
+    padding-bottom: 0 !important;
+}
+
+#description-container{
+    padding: 0% 0% 2.5% 1%;
+    display: none;
+    color: grey;
+}
+
+#image-container{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5%;
+    align-items: center;
+    justify-content: center;
+    padding-top: 10px;
+}
+
+#image-container div{
+    width: 22.5%;
+    padding-bottom: 22.5%;
+    margin-bottom: 0.5%;
+    height: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    flex: 20%;
+}
+
+.open{
+    display: flex !important;
+}
+
+.close{
+    display: none !important;
+}
+
+#lightbox{
+    display: none;
+    position: sticky;
+    top: 0;
+    width: 80%;
+    flex-direction: column;
+    position: -webkit-sticky; 
+    position: sticky;
+    align-self: flex-start; 
+}
+
+.lightbox__content{
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    height: 46vw;
+    padding: 1em;
+}
+
+.lightbox__img{
+    margin: 0 auto;
+    height: 70%;
+}
+
+.lightbox__nav{
+    text-align: center;
+}
+
+#buttons{
+    position: absolute;
+    width: 100%;
+    display: flex;
+    margin: 80px 0;
+}
+
+#back-button{
+    height: 77vh;
+    width: 50%;
+   
+}
+
+#back-button:hover{
+    cursor:w-resize;
+}
+
+#forward-button{
+    height: 77vh;
+    width: 50%;
+}
+
+#forward-button:hover{
+    cursor: e-resize;
+}
+
+button{
+    background-color: white;
+    color: black;
+    border: 0px;
+    border-bottom: 1px solid black;
+    border-style: dotted;
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+button:hover{
+    cursor: pointer;
+}
+
+
+@media screen and (width <= 800px){
+    #container{
+        flex-direction: column;
+    }
+
+    #nav{
+        width: 100%;
+        border-right: none;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid black;
+    }
+
+    #hamburger{
+        display: inline-block;
+    }
+
+    #image-container{
+        width: 100%;
+    }
+}
