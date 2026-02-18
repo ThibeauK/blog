@@ -17,9 +17,10 @@ header{
 }
 
 h2{
-    font-size: 36px;
-    line-height: 30px;
+    font-size: 30px;
+    line-height: 25px;
     margin-top: 20px;
+    margin-bottom: 0;
 }
 
 h2:hover{
@@ -30,11 +31,12 @@ h2:hover{
 
 h6{
     margin: 0;
+    margin-bottom: 10px;
 }
 
 em{
     font-style: normal;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.3px;
 }
 
 hr{
@@ -130,10 +132,13 @@ hr{
     justify-content: space-between;
 }
 
+.drive_nav_projects{
+    margin-bottom: 10px;
+}
+
 .drive-folder{
     padding-left: 10px;
     border-left: 1px dotted black;
-    margin-bottom: 10px;
     color: gray;
     font-size: 15px;
 }
@@ -143,6 +148,7 @@ hr{
     text-decoration: underline;
     text-decoration-style: dotted;
     color: black;
+    border-left: 1px solid black;
 }
 
 #hamburger{
@@ -200,6 +206,8 @@ hr{
 .spread{
     width: 100% !important;
     padding-bottom: 0 !important;
+    border: 1px dotted black;
+    cursor: default;
 }
 
 #description-container{
@@ -228,6 +236,10 @@ hr{
     flex: 20%;
 }
 
+#image-container:hover{
+    cursor: pointer;
+}
+
 .open{
     display: flex !important;
 }
@@ -251,7 +263,7 @@ hr{
     display: flex;
     justify-content: space-between;
     flex-direction: column;
-    height: 46vw;
+    height: 95vh;
     padding: 1em;
 }
 
@@ -305,9 +317,50 @@ button:hover{
 }
 
 
-@media screen and (width <= 800px){
+@media screen and (width <= 900px){
+
     #container{
         flex-direction: column;
+    }
+
+    #nav_hamburger{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100% !important;
+    }
+
+    #hamburger{
+    font-family:'Courier New', Courier, monospace;
+    display: inline-block;
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+    transform: scale(2.5,1);
+    font-weight: bold;
+    font-size: 20px;
+    margin-top: 20px;
+    margin-right: 10px;
+    }
+
+    hr{
+        height: 1px;
+    }
+
+    #containers{
+        width: 100%;
+    }
+
+    #lightbox{
+        width: 100%;
+    }
+
+    .lightbox__content{
+        height: 60vh;
+    }
+
+    .lightbox__img{
+        height: auto;
+        width: 80%;
     }
 
     #nav{
@@ -316,10 +369,6 @@ button:hover{
         padding-bottom: 20px;
         margin-bottom: 20px;
         border-bottom: 1px solid black;
-    }
-
-    #hamburger{
-        display: inline-block;
     }
 
     #image-container{
