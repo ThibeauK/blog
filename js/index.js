@@ -241,8 +241,6 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       if (isBookView) {
         const img = document.createElement("img");
         img.className = "spread noclick";
-        img.title = file.name;
-        img.alt = file.name || "";
         img.src = `https://drive.google.com/thumbnail?id=${file.id}&sz=w800`;
         img.loading = "lazy";
         coverContainer.classList.add("open");
@@ -251,7 +249,6 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
         const tile = document.createElement("div");
         tile.className = "thumb";
         tile.dataset.index = idx;
-        tile.title = file.name;
         tile.style.backgroundImage = `url(https://drive.google.com/thumbnail?id=${file.id}&sz=w400)`;
         tile.onclick = () => openLightbox(idx);
         container.appendChild(tile);
