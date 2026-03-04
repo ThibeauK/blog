@@ -23,6 +23,8 @@ const staticInfo = document.getElementById("nav-info");
 let currentImages = [];
 let currentIndex = 0;
 const rootFolderMap = {};
+let loadingFolderId = null;
+let navLoadCounter = 0;
 
 function escapeHtml(str = "") {
   return String(str)
@@ -58,7 +60,6 @@ async function buildRootFolderMap() {
   try {
     const q = `'${ROOT_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     const data = await driveFetch({ q, fields: "files(id,name)" });
-    console.log("Root folders:", data);
     if (Array.isArray(data.files)) {
       data.files.forEach(f => {
         rootFolderMap[f.name] = f.id;
@@ -69,29 +70,40 @@ async function buildRootFolderMap() {
   }
 }
 
-async function showSubfolders(parentId, targetNavEl, options = {}) {
+async function showSubfolders(parentId, targetNavEl, options = {}, loadId = null) {
   targetNavEl.innerHTML = "";
-
+  if (loadId == null) {
+    loadId = ++navLoadCounter;
+    targetNavEl.dataset.loadId = String(loadId);
+  } else {
+    targetNavEl.dataset.loadId = String(loadId);
+  }
+  if (targetNavEl.dataset.loading === "true") return;
+  targetNavEl.dataset.loading = "true";
   try {
     const q = `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     const data = await driveFetch({ q, fields: "files(id,name)" });
-    console.log(`Subfolders of ${parentId}:`, data);
-
     if (!data.files || data.files.length === 0) {
       return;
     }
-
+    data.files.sort((a,b) => (a.name||'').localeCompare(b.name||'', undefined, { numeric: true, sensitivity: 'base' }));
+    if (targetNavEl.dataset.loadId !== String(loadId)) return;
     data.files.forEach(folder => {
+      if (targetNavEl.dataset.loadId !== String(loadId)) return;
       const d = document.createElement("div");
       d.className = "drive-folder";
       d.textContent = folder.name;
       d.onclick = () => {
+        const newLoadId = ++navLoadCounter;
+        targetNavEl.dataset.loadId = String(newLoadId);
         loadFolder(folder.id, options);
       };
       targetNavEl.appendChild(d);
     });
   } catch (err) {
     console.error("Error listing subfolders:", err);
+  } finally {
+    delete targetNavEl.dataset.loading;
   }
 }
 
@@ -106,6 +118,8 @@ function preloadImage(src) {
 }
 
 async function loadFolder(folderId, options = { isBook: false, showText: true }) {
+  if (loadingFolderId === folderId) return;
+  loadingFolderId = folderId;
   container.innerHTML = "";
   coverContainer.innerHTML = "";
   descriptionContainer.innerHTML = "";
@@ -117,21 +131,15 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
   container.classList.remove("close");
   allcontainers.classList.remove("close");
 
-  console.log("Loading folder (preload mode):", folderId, options);
-
   const q = `'${folderId}' in parents and trashed = false`;
   try {
     const data = await driveFetch({
       q,
       fields: "files(id,name,mimeType,shortcutDetails,iconLink,webViewLink),nextPageToken"
     });
-    console.log("Drive response for folder:", folderId, data);
-
     if (!data.files || data.files.length === 0) {
-      allcontainers.classList.remove("loading");
       return;
     }
-
     const resolved = data.files.map(f => {
       if (f.mimeType === "application/vnd.google-apps.shortcut" && f.shortcutDetails && f.shortcutDetails.targetId) {
         return {
@@ -142,17 +150,16 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       }
       return f;
     });
-
+    resolved.sort((a,b) => (a.name||'').localeCompare(b.name||'', undefined, { numeric: true, sensitivity: 'base' }));
     const textFiles = resolved.filter(f => {
       const name = (f.name || "").toLowerCase();
       return name.endsWith(".txt") || (f.mimeType || "").toLowerCase() === "text/plain";
     });
-
     const imageFiles = resolved.filter(f => {
       const mt = (f.mimeType || "").toLowerCase();
       return mt.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name || "");
     });
-
+    imageFiles.sort((a,b) => (a.name||'').localeCompare(b.name||'', undefined, { numeric: true, sensitivity: 'base' }));
     let coverFile = null;
     if (options.isBook) {
       const coverIdx = imageFiles.findIndex(f => /^cover\.(jpg|jpeg|png|webp)$/i.test((f.name || "")));
@@ -164,7 +171,6 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
         }
       }
     }
-
     const preloadPromises = [];
     let coverUrl = null;
     if (coverFile) {
@@ -172,8 +178,7 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       preloadPromises.push(preloadImage(coverUrl));
     }
     const thumbUrls = imageFiles.map(f => `https://drive.google.com/thumbnail?id=${f.id}&sz=${options.isBook ? 'w800' : 'w400'}`);
-    thumbUrls.forEach(u => preloadPromises.push(preloadImage(u)));
-
+    thumbUrls.forEach(u => preloadImage(u));
     let textFetchPromise = null;
     let chosenTextFile = null;
     if (options.showText && textFiles.length > 0) {
@@ -189,14 +194,10 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
         .catch(err => ({ ok: false, error: err }));
       preloadPromises.push(textFetchPromise);
     }
-
     await Promise.allSettled(preloadPromises);
-
     allcontainers.classList.toggle('book-view', !!options.isBook);
     container.classList.toggle('book-spreads', !!options.isBook);
-
     currentImages = imageFiles.slice();
-
     if (coverFile) {
       const imgEl = document.createElement("img");
       imgEl.className = "book-cover";
@@ -205,7 +206,6 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       imgEl.loading = "lazy";
       coverContainer.appendChild(imgEl);
     }
-
     if (chosenTextFile && textFetchPromise) {
       try {
         const maybe = await textFetchPromise;
@@ -216,7 +216,6 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
           descriptionContainer.classList.add("open");
           hrContainer.classList.add("open");
           descriptionContainer.appendChild(textEl);
-
           if (options.isBook) {
             coverContainer.appendChild(descriptionContainer);
           } else {
@@ -233,10 +232,8 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
         allcontainers.appendChild(descriptionContainer);
       }
     }
-
     container.innerHTML = "";
     const isBookView = !!options.isBook;
-
     imageFiles.forEach((file, idx) => {
       if (isBookView) {
         const img = document.createElement("img");
@@ -254,11 +251,11 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
         container.appendChild(tile);
       }
     });
-
   } catch (err) {
     console.error("Error loading folder:", err);
   } finally {
     allcontainers.classList.remove("loading");
+    loadingFolderId = null;
   }
 }
 
@@ -299,7 +296,6 @@ function renderLightbox() {
   const file = currentImages[currentIndex];
   if (!file) return;
   const fullUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1200`;
-
   lightbox.innerHTML = `
     <div class="lightbox__content" role="dialog" aria-modal="true" aria-label="${escapeHtml(file.name)}">
       <div class="lightbox__controls">
@@ -316,7 +312,6 @@ function renderLightbox() {
       </div>
     </div>
   `;
-
   lightbox.querySelector('[data-role="close"]').addEventListener("click", closeLightbox);
   lightbox.querySelector('[data-role="prev"]').addEventListener("click", showPrev);
   lightbox.querySelector('[data-role="next"]').addEventListener("click", showNext);
@@ -345,22 +340,23 @@ function toggleSubfolderNav(folderName, targetNavEl, staticEl, otherNavEl) {
     allcontainers.appendChild(descriptionContainer);
     descriptionContainer.innerHTML = "";
     container.innerHTML = "";
+    delete targetNavEl.dataset.loadId;
     return;
   }
   if (otherNavEl) otherNavEl.innerHTML = "";
-
   const folderId = rootFolderMap[folderName];
   if (!folderId) {
     targetNavEl.innerHTML = "";
     return;
   }
   const options = { isBook: folderName === "Books", showText: true };
-  showSubfolders(folderId, targetNavEl, options);
+  const loadId = ++navLoadCounter;
+  targetNavEl.dataset.loadId = String(loadId);
+  showSubfolders(folderId, targetNavEl, options, loadId);
 }
 
 async function init() {
   await buildRootFolderMap();
-
   staticPortfolio.onclick = () => {
     driveNavProjects.innerHTML = "";
     driveNavBooks.innerHTML = "";
@@ -371,18 +367,14 @@ async function init() {
     lightbox.classList.remove("open");
     container.classList.remove("close");
     allcontainers.classList.remove("close");
-
     loadFolder(ROOT_FOLDER_ID, { isBook: false, showText: false });
   };
-
   staticProjects.onclick = () => {
     toggleSubfolderNav("Projects", driveNavProjects, staticProjects, driveNavBooks);
   };
-
   staticBooks.onclick = () => {
     toggleSubfolderNav("Books", driveNavBooks, staticBooks, driveNavProjects);
   };
-
   staticInfo.onclick = () => {
     driveNavProjects.innerHTML = "";
     driveNavBooks.innerHTML = "";
@@ -395,7 +387,6 @@ async function init() {
     allcontainers.classList.remove("close");
     container.innerHTML = `<div class="info">Contact info and other details here.</div>`;
   };
-
   staticPortfolio.click();
 }
 
