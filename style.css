@@ -233,7 +233,6 @@ hr{
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
-    flex: 20%;
 }
 
 #image-container:hover{
