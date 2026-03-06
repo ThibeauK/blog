@@ -266,9 +266,23 @@ hr{
     padding: 1em;
 }
 
+.lightbox__info{
+    display: flex;
+    gap: 8px;
+}
+
+.lightbox__info a{
+    text-decoration-style: dotted;
+    color: grey;
+}
+
+.lightbox__info a:hover{
+    color: black;
+}
+
 .lightbox__img{
     margin: 0 auto;
-    height: 70%;
+    height: 40em;
 }
 
 .lightbox__nav{
@@ -315,6 +329,11 @@ button:hover{
     cursor: pointer;
 }
 
+@media screen and (width <= 1600px){
+    .lightbox__img{
+    height: 50%;
+}
+}
 
 @media screen and (width <= 900px){
 
