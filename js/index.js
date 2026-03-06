@@ -117,6 +117,23 @@ function preloadImage(src) {
   });
 }
 
+function findFolderIdByName(name) {
+  const lc = (name || '').toLowerCase();
+  for (const key of Object.keys(rootFolderMap)) {
+    if ((key || '').toLowerCase() === lc) return rootFolderMap[key];
+  }
+  return null;
+}
+
+function buildInfoLinksFromFilename(filename) {
+  if (!filename) return [];
+  const nameNoExt = filename.replace(/\.[^/.]+$/, '');
+  const parts = nameNoExt.split('-').map(p => p.trim()).filter(p => p.length);
+  if (parts.length === 0) return [];
+  if (/^\d+$/.test(parts[0])) parts.shift();
+  return parts.map(p => p.trim()).filter(p => p.length);
+}
+
 async function loadFolder(folderId, options = { isBook: false, showText: true }) {
   if (loadingFolderId === folderId) return;
   loadingFolderId = folderId;
@@ -292,6 +309,30 @@ function showNext() {
   updateLightboxImage();
 }
 
+function populateInfoLinksForFile(file) {
+  const infoContainer = lightbox.querySelector('.lightbox__info');
+  if (!infoContainer) return;
+  infoContainer.innerHTML = '';
+  const parts = buildInfoLinksFromFilename(file && file.name ? file.name : '');
+  parts.forEach(part => {
+    const a = document.createElement('a');
+    a.href = '#';
+    a.className = 'lightbox__info-link';
+    a.textContent = part;
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const fid = findFolderIdByName(part);
+      if (fid) {
+        loadFolder(fid, { isBook: part === 'Books', showText: true });
+        closeLightbox();
+      } else {
+        console.warn('No folder found matching', part);
+      }
+    });
+    infoContainer.appendChild(a);
+  });
+}
+
 function renderLightbox() {
   const file = currentImages[currentIndex];
   if (!file) return;
@@ -307,6 +348,7 @@ function renderLightbox() {
       </div>
       <img class="lightbox__img" src="${fullUrl}" alt="${escapeHtml(file.name)}" />
       <div class="lightbox__nav">
+        <div class="lightbox__info"></div>
         <button data-role="prev" aria-label="Previous"><</button>
         <button data-role="next" aria-label="Next">></button>
       </div>
@@ -315,6 +357,7 @@ function renderLightbox() {
   lightbox.querySelector('[data-role="close"]').addEventListener("click", closeLightbox);
   lightbox.querySelector('[data-role="prev"]').addEventListener("click", showPrev);
   lightbox.querySelector('[data-role="next"]').addEventListener("click", showNext);
+  populateInfoLinksForFile(file);
 }
 
 function updateLightboxImage() {
@@ -324,6 +367,17 @@ function updateLightboxImage() {
   if (img) img.src = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1200`;
   const content = lightbox.querySelector(".lightbox__content");
   if (content) content.setAttribute("aria-label", file.name);
+  populateInfoLinksForFile(file);
+}
+
+function updateLightboxImage() {
+  const file = currentImages[currentIndex];
+  if (!file) return;
+  const img = lightbox.querySelector(".lightbox__img");
+  if (img) img.src = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1200`;
+  const content = lightbox.querySelector(".lightbox__content");
+  if (content) content.setAttribute("aria-label", file.name);
+  populateInfoLinksForFile(file);
 }
 
 function onKeyDown(e) {
@@ -357,37 +411,52 @@ function toggleSubfolderNav(folderName, targetNavEl, staticEl, otherNavEl) {
 
 async function init() {
   await buildRootFolderMap();
-  staticPortfolio.onclick = () => {
-    driveNavProjects.innerHTML = "";
-    driveNavBooks.innerHTML = "";
-    coverContainer.innerHTML = "";
-    descriptionContainer.innerHTML = "";
-    descriptionContainer.classList.remove("open");
-    hrContainer.classList.remove("open");
-    lightbox.classList.remove("open");
-    container.classList.remove("close");
-    allcontainers.classList.remove("close");
-    loadFolder(ROOT_FOLDER_ID, { isBook: false, showText: false });
-  };
-  staticProjects.onclick = () => {
-    toggleSubfolderNav("Projects", driveNavProjects, staticProjects, driveNavBooks);
-  };
-  staticBooks.onclick = () => {
-    toggleSubfolderNav("Books", driveNavBooks, staticBooks, driveNavProjects);
-  };
-  staticInfo.onclick = () => {
-    driveNavProjects.innerHTML = "";
-    driveNavBooks.innerHTML = "";
-    coverContainer.innerHTML = "";
-    descriptionContainer.innerHTML = "";
-    descriptionContainer.classList.remove("open");
-    hrContainer.classList.remove("open");
-    lightbox.classList.remove("open");
-    container.classList.remove("close");
-    allcontainers.classList.remove("close");
-    container.innerHTML = `<div class="info">Contact info and other details here.</div>`;
-  };
-  staticPortfolio.click();
+
+  if (staticPortfolio) {
+    staticPortfolio.onclick = () => {
+      if (driveNavProjects) driveNavProjects.innerHTML = "";
+      if (driveNavBooks) driveNavBooks.innerHTML = "";
+      if (coverContainer) coverContainer.innerHTML = "";
+      if (descriptionContainer) descriptionContainer.innerHTML = "";
+      if (descriptionContainer && descriptionContainer.classList) descriptionContainer.classList.remove("open");
+      if (hrContainer && hrContainer.classList) hrContainer.classList.remove("open");
+      if (lightbox && lightbox.classList) lightbox.classList.remove("open");
+      if (container && container.classList) container.classList.remove("close");
+      if (allcontainers && allcontainers.classList) allcontainers.classList.remove("close");
+      loadFolder(ROOT_FOLDER_ID, { isBook: false, showText: false });
+    };
+  }
+
+  if (staticProjects) {
+    staticProjects.onclick = () => {
+      toggleSubfolderNav("Projects", driveNavProjects, staticProjects, driveNavBooks);
+    };
+  }
+
+  if (staticBooks) {
+    staticBooks.onclick = () => {
+      toggleSubfolderNav("Books", driveNavBooks, staticBooks, driveNavProjects);
+    };
+  }
+
+  if (staticInfo) {
+    staticInfo.onclick = () => {
+      if (driveNavProjects) driveNavProjects.innerHTML = "";
+      if (driveNavBooks) driveNavBooks.innerHTML = "";
+      if (coverContainer) coverContainer.innerHTML = "";
+      if (descriptionContainer) descriptionContainer.innerHTML = "";
+      if (descriptionContainer && descriptionContainer.classList) descriptionContainer.classList.remove("open");
+      if (hrContainer && hrContainer.classList) hrContainer.classList.remove("open");
+      if (lightbox && lightbox.classList) lightbox.classList.remove("open");
+      if (container && container.classList) container.classList.remove("close");
+      if (allcontainers && allcontainers.classList) allcontainers.classList.remove("close");
+      if (container) container.innerHTML = `<div class="info">Contact info and other details here.</div>`;
+    };
+  }
+
+  if (staticPortfolio && typeof staticPortfolio.click === "function") {
+    staticPortfolio.click();
+  }
 }
 
 document.addEventListener("DOMContentLoaded", init);
