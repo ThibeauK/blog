@@ -1,13 +1,13 @@
 *{
     font-family: 'Open Sans';
     font-weight: normal;
+    font-size: 15px;
 }
 
 body{
     background-color: white;
     color: black;
     margin: 0 1em;
-    overflow: scroll;
 }
 
 header{
@@ -21,7 +21,8 @@ h2{
     line-height: 25px;
     margin-top: 20px;
     margin-bottom: 0;
-}
+} 
+
 
 h2:hover{
     cursor: pointer;
@@ -36,6 +37,7 @@ h6{
 
 em{
     font-style: normal;
+    font-size: 30px;
     letter-spacing: 0.3px;
 }
 
@@ -119,7 +121,6 @@ hr{
 #info a{
     color: grey;
     text-decoration-style: dotted;
-    font-size: 15px;
 }
 
 #info a:hover{
@@ -140,7 +141,6 @@ hr{
     padding-left: 10px;
     border-left: 1px dotted black;
     color: gray;
-    font-size: 15px;
 }
 
 .drive-folder:hover{
@@ -152,26 +152,10 @@ hr{
 }
 
 #hamburger{
-    font-family:'Courier New', Courier, monospace;
     display: none;
-    border-top: 2px solid black;
-    border-bottom: 2px solid black;
-    transform: scale(2.5,1);
-    font-weight: bold;
-    font-size: 20px;
-    margin-right: 10px;
-}
-
-#hamburger:hover{
-    rotate: 90deg;
-    transform: scale(2,1.1);
-    border-bottom: 0px;
-    border-top: 0px;
-    border-left: 1px solid black;
 }
 
 .book-view{
-    display: flex !important;
     flex-direction: row !important;
     padding: 0 !important;
     gap: 1em;
@@ -219,7 +203,7 @@ hr{
 #image-container{
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5%;
+    gap: 0.5em;
     align-items: center;
     justify-content: center;
     padding-top: 10px;
@@ -228,7 +212,6 @@ hr{
 #image-container div{
     width: 22.5%;
     padding-bottom: 22.5%;
-    margin-bottom: 0.5%;
     height: 0;
     background-position: center;
     background-repeat: no-repeat;
@@ -269,20 +252,17 @@ hr{
 .lightbox__info{
     display: flex;
     gap: 8px;
+    width: fit-content;
+    margin: 0 auto;
 }
 
-.lightbox__info a{
-    text-decoration-style: dotted;
+.lightbox__info p{
     color: grey;
-}
-
-.lightbox__info a:hover{
-    color: black;
 }
 
 .lightbox__img{
     margin: 0 auto;
-    height: 40em;
+    height: 75%;
 }
 
 .lightbox__nav{
@@ -331,14 +311,33 @@ button:hover{
 
 @media screen and (width <= 1600px){
     .lightbox__img{
+    height: 70%;
+}
+}
+
+@media screen and (width <= 1350px){
+    .lightbox__img{
+    height: 60%;
+}
+}
+
+@media screen and (width <= 1150px){
+    .lightbox__img{
     height: 50%;
 }
 }
 
-@media screen and (width <= 900px){
+@media screen and (width <= 1000px){
+    *{
+        font-size: 19px;
+    }
 
     #container{
         flex-direction: column;
+    }
+
+    h2{
+        margin-bottom: 20px;
     }
 
     #nav_hamburger{
@@ -354,10 +353,30 @@ button:hover{
     border-top: 2px solid black;
     border-bottom: 2px solid black;
     transform: scale(2.5,1);
+    transition: 0.25s;
     font-weight: bold;
     font-size: 20px;
-    margin-top: 20px;
     margin-right: 10px;
+    }
+
+    .hoverstate{
+    rotate: 90deg;
+    transform: scale(2.1,1.1) !important;
+    transition: 0.25s;
+    border-bottom: 0px;
+    border-top: 0px;
+    border-left: 1px solid black;
+    border-bottom: none !important;
+    border-top: none !important;
+    }
+
+    .static-nav{
+        display: none;
+        transition: s;
+    }
+
+    .opennav{
+        display: flex;
     }
 
     hr{
@@ -368,13 +387,18 @@ button:hover{
         width: 100%;
     }
 
-    #lightbox{
-        width: 100%;
+    .book-view{
+        flex-direction: column !important;
     }
 
-    .lightbox__content{
-        height: 60vh;
+    #lightbox{
+        width: 96.5vw;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: white;
     }
+
 
     .lightbox__img{
         height: auto;
@@ -387,9 +411,27 @@ button:hover{
         padding-bottom: 20px;
         margin-bottom: 20px;
         border-bottom: 1px solid black;
+        position: relative;
+        border-bottom: 1px solid black;
+    }
+
+    #info{
+        position: relative;
+        bottom: 0;
+        margin-top: 2em;
     }
 
     #image-container{
         width: 100%;
+    }
+
+    #image-container div{
+        width: 45%;
+        padding-bottom: 45%;
+    }
+
+    #cover-container{
+    position: relative;
+    width: 100%;
     }
 }
