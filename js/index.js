@@ -8,6 +8,7 @@ if (!API_KEY) {
 const driveNavProjects = document.getElementById("drive_nav_projects");
 const driveNavBooks = document.getElementById("drive_nav_books");
 const lightbox = document.getElementById("lightbox");
+const nav = document.getElementById("static-nav");
 
 const allcontainers = document.getElementById("containers");
 const container = document.getElementById("image-container");
@@ -33,6 +34,20 @@ function escapeHtml(str = "") {
     .replace(/'/g, "&#39;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function toggleNav(nav) {
+  const hamburger = document.getElementById("hamburger")
+
+  if (nav && nav.style) {
+    nav.style.display = nav.style.display != 'flex'? 'flex' : '';
+  }
+
+  if (hamburger.classList.contains('hoverstate')) {
+    hamburger.classList.remove('hoverstate');  
+  }else{
+    hamburger.classList.add('hoverstate');
+  }
 }
 
 async function driveFetch(queryParams) {
@@ -97,6 +112,7 @@ async function showSubfolders(parentId, targetNavEl, options = {}, loadId = null
         const newLoadId = ++navLoadCounter;
         targetNavEl.dataset.loadId = String(newLoadId);
         loadFolder(folder.id, options);
+        toggleNav(nav)
       };
       targetNavEl.appendChild(d);
     });
@@ -315,21 +331,9 @@ function populateInfoLinksForFile(file) {
   infoContainer.innerHTML = '';
   const parts = buildInfoLinksFromFilename(file && file.name ? file.name : '');
   parts.forEach(part => {
-    const a = document.createElement('a');
-    a.href = '#';
-    a.className = 'lightbox__info-link';
-    a.textContent = part;
-    a.addEventListener('click', (e) => {
-      e.preventDefault();
-      const fid = findFolderIdByName(part);
-      if (fid) {
-        loadFolder(fid, { isBook: part === 'Books', showText: true });
-        closeLightbox();
-      } else {
-        console.warn('No folder found matching', part);
-      }
-    });
-    infoContainer.appendChild(a);
+    const p = document.createElement('p');
+    p.textContent = part;
+    infoContainer.appendChild(p);
   });
 }
 
@@ -424,6 +428,7 @@ async function init() {
       if (container && container.classList) container.classList.remove("close");
       if (allcontainers && allcontainers.classList) allcontainers.classList.remove("close");
       loadFolder(ROOT_FOLDER_ID, { isBook: false, showText: false });
+      toggleNav(nav)
     };
   }
 
