@@ -349,25 +349,34 @@ button:hover{
 
     #hamburger{
     font-family:'Courier New', Courier, monospace;
-    display: inline-block;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     border-top: 2px solid black;
     border-bottom: 2px solid black;
-    transform: scale(2.5,1);
     transition: 0.25s;
     font-weight: bold;
-    font-size: 20px;
+    width: 30px;
+    height: 25px;
     margin-right: 10px;
     }
 
     .hoverstate{
     rotate: 90deg;
-    transform: scale(2.1,1.1) !important;
     transition: 0.25s;
     border-bottom: 0px;
     border-top: 0px;
-    border-left: 1px solid black;
+    border-left: 2px solid black;
     border-bottom: none !important;
     border-top: none !important;
+    height: 30px   !important;
+    }
+
+    #line{
+        border-bottom: 2px solid black;
+        width: 100% !important;
+        margin-top: -1px;
+        height: 1px;
     }
 
     .static-nav{
