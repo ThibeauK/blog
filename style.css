@@ -1,7 +1,7 @@
 *{
     font-family: 'Open Sans';
     font-weight: normal;
-    font-size: 15px;
+    font-size: 14px;
 }
 
 body{
@@ -15,10 +15,9 @@ header{
     align-items: center;
     justify-content: space-between;
 }
-
 h2{
-    font-size: 30px;
-    line-height: 25px;
+    font-size: 25px;
+    line-height: 20px;
     margin-top: 20px;
     margin-bottom: 0;
 } 
@@ -33,11 +32,16 @@ h2:hover{
 h6{
     margin: 0;
     margin-bottom: 10px;
+    font-size: 11px;
+    line-height: 18px;
+    color: grey;
+    border-left: 1px dotted black;
+    padding-left: 1em;
 }
 
 em{
     font-style: normal;
-    font-size: 30px;
+    font-size: 25px;
     letter-spacing: 0.3px;
 }
 
@@ -137,6 +141,12 @@ hr{
     margin-bottom: 10px;
 }
 
+#drive_nav_books{
+    max-height: 50vh;
+    overflow: scroll;
+    padding-right: 20px;
+}
+
 .drive-folder{
     padding-left: 10px;
     border-left: 1px dotted black;
@@ -195,7 +205,7 @@ hr{
 }
 
 #description-container{
-    padding: 0% 0% 2.5% 1%;
+    padding: 0% 12.5% 2.5% 1%;
     display: none;
     color: grey;
 }
@@ -239,6 +249,37 @@ hr{
     position: -webkit-sticky; 
     position: sticky;
     align-self: flex-start; 
+}
+
+.info{
+    width: 80% !important;
+    height: fit-content !important;
+}
+
+#quote{
+    margin: 5em 0;
+    width: 100% !important;
+    height: fit-content !important;
+    padding-bottom: 0 !important;
+}
+
+blockquote{
+    color: grey;
+    border-left: 1px dotted gray;
+    padding-left: 1em;
+}
+
+
+
+#auteur{
+    margin-left: 40px;
+    padding-left: 1em;
+    color: gray;
+}
+
+#tekstblok{
+    width: 100% !important;
+    height: fit-content !important;
 }
 
 .lightbox__content{
@@ -331,6 +372,7 @@ button:hover{
     *{
         font-size: 19px;
     }
+    
 
     #container{
         flex-direction: column;
@@ -394,6 +436,10 @@ button:hover{
 
     #containers{
         width: 100%;
+    }
+
+    #drive_nav_books{
+        max-height: max-content;
     }
 
     .book-view{
