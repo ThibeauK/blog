@@ -254,6 +254,7 @@ hr{
 .info{
     width: 80% !important;
     height: fit-content !important;
+    margin: 0 auto;
 }
 
 #quote{
