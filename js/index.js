@@ -26,6 +26,8 @@ let currentIndex = 0;
 const rootFolderMap = {};
 let loadingFolderId = null;
 let navLoadCounter = 0;
+let loadSessionCounter = 0;
+let activeLoadSession = 0;
 
 function escapeHtml(str = "") {
   return String(str)
@@ -47,6 +49,28 @@ function toggleNav(nav) {
     hamburger.classList.remove('hoverstate');  
   }else{
     hamburger.classList.add('hoverstate');
+  }
+}
+
+function removeInfo() {
+  const infoEl = document.getElementById('page-info');
+  if (infoEl) infoEl.remove();
+  if (container) {
+    container.style.display = '';
+    container.classList.remove('close');
+  }
+  if (coverContainer) {
+    coverContainer.classList.remove('open');
+  }
+  if (descriptionContainer) {
+    descriptionContainer.innerHTML = "";
+    descriptionContainer.classList.remove('open');
+  }
+  if (hrContainer) {
+    hrContainer.classList.remove('open');
+  }
+  if (allcontainers) {
+    allcontainers.classList.remove('close');
   }
 }
 
@@ -151,7 +175,9 @@ function buildInfoLinksFromFilename(filename) {
 }
 
 async function loadFolder(folderId, options = { isBook: false, showText: true }) {
-  if (loadingFolderId === folderId) return;
+  removeInfo();
+  const session = ++loadSessionCounter;
+  activeLoadSession = session;
   loadingFolderId = folderId;
   container.innerHTML = "";
   coverContainer.innerHTML = "";
@@ -170,7 +196,12 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       q,
       fields: "files(id,name,mimeType,shortcutDetails,iconLink,webViewLink),nextPageToken"
     });
+    if (session !== activeLoadSession) return;
     if (!data.files || data.files.length === 0) {
+      if (session === activeLoadSession) {
+        allcontainers.classList.remove("loading");
+        loadingFolderId = null;
+      }
       return;
     }
     const resolved = data.files.map(f => {
@@ -228,6 +259,7 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       preloadPromises.push(textFetchPromise);
     }
     await Promise.allSettled(preloadPromises);
+    if (session !== activeLoadSession) return;
     allcontainers.classList.toggle('book-view', !!options.isBook);
     container.classList.toggle('book-spreads', !!options.isBook);
     currentImages = imageFiles.slice();
@@ -242,6 +274,7 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
     if (chosenTextFile && textFetchPromise) {
       try {
         const maybe = await textFetchPromise;
+        if (session !== activeLoadSession) return;
         if (maybe && maybe.ok && typeof maybe.text === "string") {
           const textEl = document.createElement("div");
           textEl.className = "folder-description";
@@ -259,6 +292,7 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
         console.error("Failed to render text file:", e);
       }
     } else {
+      if (session !== activeLoadSession) return;
       if (options.isBook) {
         coverContainer.appendChild(descriptionContainer);
       } else {
@@ -268,6 +302,7 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
     container.innerHTML = "";
     const isBookView = !!options.isBook;
     imageFiles.forEach((file, idx) => {
+      if (session !== activeLoadSession) return;
       if (isBookView) {
         const img = document.createElement("img");
         img.className = "spread noclick";
@@ -287,8 +322,10 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
   } catch (err) {
     console.error("Error loading folder:", err);
   } finally {
-    allcontainers.classList.remove("loading");
-    loadingFolderId = null;
+    if (session === activeLoadSession) {
+      allcontainers.classList.remove("loading");
+      loadingFolderId = null;
+    }
   }
 }
 
@@ -374,16 +411,6 @@ function updateLightboxImage() {
   populateInfoLinksForFile(file);
 }
 
-function updateLightboxImage() {
-  const file = currentImages[currentIndex];
-  if (!file) return;
-  const img = lightbox.querySelector(".lightbox__img");
-  if (img) img.src = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1200`;
-  const content = lightbox.querySelector(".lightbox__content");
-  if (content) content.setAttribute("aria-label", file.name);
-  populateInfoLinksForFile(file);
-}
-
 function onKeyDown(e) {
   if (!lightbox.classList.contains("open")) return;
   if (e.key === "Escape") closeLightbox();
@@ -398,6 +425,7 @@ function toggleSubfolderNav(folderName, targetNavEl, staticEl, otherNavEl) {
     allcontainers.appendChild(descriptionContainer);
     descriptionContainer.innerHTML = "";
     container.innerHTML = "";
+    containers.innerHTML ="";
     delete targetNavEl.dataset.loadId;
     return;
   }
@@ -445,18 +473,26 @@ async function init() {
   }
 
   if (staticInfo) {
-    staticInfo.onclick = () => {
+      staticInfo.onclick = () => {
+      removeInfo();
       if (driveNavProjects) driveNavProjects.innerHTML = "";
       if (driveNavBooks) driveNavBooks.innerHTML = "";
       if (coverContainer) coverContainer.innerHTML = "";
       if (descriptionContainer) descriptionContainer.innerHTML = "";
+      if (container) container.innerHTML = "";
       if (descriptionContainer && descriptionContainer.classList) descriptionContainer.classList.remove("open");
       if (hrContainer && hrContainer.classList) hrContainer.classList.remove("open");
       if (lightbox && lightbox.classList) lightbox.classList.remove("open");
-      if (container && container.classList) container.classList.remove("close");
+      if (container && container.classList) container.classList.add("close");
+      if (coverContainer && coverContainer.classList) coverContainer.classList.remove("open");
       if (allcontainers && allcontainers.classList) allcontainers.classList.remove("close");
-      if (container) container.innerHTML = `
-      <div class="info">
+
+      if (!document.getElementById('page-info')) {
+      const infoDiv = document.createElement('div');
+      infoDiv.id = 'page-info';
+      infoDiv.className = 'info';
+      infoDiv.innerHTML = `
+      <div id="page-info">
           <p>Tom D’haenens (born 1969) is a Belgian artistic photographer and publisher of unique photo books. He received his photography education at the Ghent Academy of Arts. Later he moved to Baltimore (US) where he deeply inhaled the business life of the Metropolis of New York. He soon made quite a name in the international business world as a photographic artist with that special eye that makes the difference. 
 In this multinational environment he has always been fascinated by the exterior signs of economic and societal globalization. He has travelled to about every corner of the world, always on the lookout for that special unique shot that will capture the essence of a moment in time. In doing so he translates this world in terms of beauty and pathos. Nothing is dull, nothing is monotonous. Recognizing the rhetorical power of photography, D’haenens freezes his subject with a distinguished lightness. He possesses the ability to convert banal reality as much as unique human achievement into a brilliant image. In a split second, a detail of framed reality is given an unprecedented lustre that amazes his public. The unnoticed is given visibility that strikes us, catches us, teases us, triggers our curiosity and that challenges us to get a closer look into the story behind the picture. 
 Tom D’haenens’ pictures have immortalized the most prestigious projects of a large number of multinationals in a number of amazing photo books, including the prize-winning ‘Brussels Airport’, ‘The Port of Antwerp’, ‘Flanders Port Area’, ‘Creating Land for the Future, ‘Ghent, so much city’, ‘Flanders State of the Arts’ and many more.
@@ -523,8 +559,11 @@ With a passion for imagery, industry, and storytelling, Viewvision Publishers cr
       </p>
 
       </div>`;
-    };
-  }
+    allcontainers.insertBefore(infoDiv, container);
+      container.style.display = '';
+    }
+  };
+}
 
   if (staticPortfolio && typeof staticPortfolio.click === "function") {
     staticPortfolio.click();
