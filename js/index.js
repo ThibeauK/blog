@@ -542,8 +542,21 @@ Living in America...
 Photography is literally in D’haenens' genes. As a child he was fascinated by the medium and often borrowed his parents' camera. The seeds of a bright photographic future had been sown. From an early age, he was eager to discover the photographic equivalent of the world. That aspect has never left him until today; studio work, on the other hand, is not his cup of tea. "I need to feel and see the world," he says. 
         </p>
       </div>
+  
+  <div id="logos">
+  <div>
+     <img src="logo-tom.jpg" alt="logo Tom D'haenens">
+     <p>School of Arts Ghent
+     <br>Baltimore School of Arts USA</p>
+     <p>Drone certificated pilot
+     <br>Bossiet - offshore certified</p>
 
-      <img src="logo.jpg" alt="logo View&Vision">
+  </div>
+
+  <hr>
+
+  <div>
+      <img src="logo-vv.jpg" alt="logo View&Vision">
       <p>
       View&Vision Publishers specialiseert zich in het creëren en publiceren van hoogwaardige fotoboeken voor de industrie. Met een sterke focus op visuele storytelling brengt Viewvision de wereld van techniek, productie en industriële innovatie op een unieke en inspirerende manier in beeld.
 Door middel van krachtige fotografie en zorgvuldig vormgegeven publicaties documenteert Viewvision het vakmanschap, de mensen en de processen achter industriële bedrijven. Elk project wordt ontwikkeld met oog voor detail, kwaliteit en authenticiteit, waardoor de publicaties niet alleen informatief zijn, maar ook esthetisch aantrekkelijk.
@@ -557,8 +570,9 @@ Through striking photography and carefully designed publications, Viewvision doc
 Working closely with businesses, Viewvision translates their stories into tangible, lasting publications that not only showcase the present but also serve as valuable records for the future.
 With a passion for imagery, industry, and storytelling, Viewvision Publishers creates books that reveal the power and creativity of industrial enterprises.
       </p>
-
-      </div>`;
+    </div>
+  </div>     
+</div>`;
     allcontainers.insertBefore(infoDiv, container);
       container.style.display = '';
     }
