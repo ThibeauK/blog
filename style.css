@@ -257,6 +257,21 @@ hr{
     margin: 0 auto;
 }
 
+#logos{
+    display: flex;
+    gap: 1em;
+    height: max-content;
+    margin: 5em 0;
+}
+
+#logos div{
+    width: 50%;
+}
+
+#logos hr{
+    height: auto;
+}
+
 #quote{
     margin: 5em 0;
     width: 100% !important;
