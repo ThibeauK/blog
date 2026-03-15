@@ -131,7 +131,7 @@ async function showSubfolders(parentId, targetNavEl, options = {}, loadId = null
       if (targetNavEl.dataset.loadId !== String(loadId)) return;
       const d = document.createElement("div");
       d.className = "drive-folder";
-      d.textContent = folder.name;
+      d.textContent = stripNumberPrefix(folder.name);
       d.onclick = () => {
         const newLoadId = ++navLoadCounter;
         targetNavEl.dataset.loadId = String(newLoadId);
@@ -145,6 +145,11 @@ async function showSubfolders(parentId, targetNavEl, options = {}, loadId = null
   } finally {
     delete targetNavEl.dataset.loading;
   }
+}
+
+function stripNumberPrefix(name) {
+  if (!name) return name;
+  return name.replace(/^\d+\.\s*/, '');
 }
 
 function preloadImage(src) {
@@ -492,6 +497,48 @@ async function init() {
       infoDiv.id = 'page-info';
       infoDiv.className = 'info';
       infoDiv.innerHTML = `
+        <div id="logos">
+  <div id="logo-links">
+    <div>
+    <img src="logo-tom.jpg" alt="logo Tom D'haenens" class="logo">
+     <img src="foto-tom.jpg" alt="foto Tom D'haenens" id="pfp">
+     <h6>Belgium-based photographer working in more <br> than 30 countries worldwide.</h6>
+     <p>School of Arts Ghent
+     <br>Baltimore School of Arts USA</p>
+     <p>Drone certificated pilot
+     <br>Bossiet - offshore certified</p>
+    </div>
+     <div>
+     <br>
+      <a href="">+32 475 25 82 15</a>
+      <a href="mailto:tom@viewvision.be">tom@viewvision.be</a>
+      </div>
+  </div>
+
+  <hr>
+
+  <div id="logo-rechts">
+    <div>
+      <img src="logo-vv.jpg" alt="logo View&Vision" class="logo">
+      <p>
+      View&Vision Publishers specialiseert zich in het creëren en publiceren van hoogwaardige fotoboeken voor de industrie. Met een sterke focus op visuele storytelling brengt Viewvision de wereld van techniek, productie en industriële innovatie op een unieke en inspirerende manier in beeld.
+Door middel van krachtige fotografie en zorgvuldig vormgegeven publicaties documenteert Viewvision het vakmanschap, de mensen en de processen achter industriële bedrijven. Elk project wordt ontwikkeld met oog voor detail, kwaliteit en authenticiteit, waardoor de publicaties niet alleen informatief zijn, maar ook esthetisch aantrekkelijk.
+Viewvision Publishers werkt nauw samen met bedrijven om hun verhaal visueel te vertalen naar een tastbaar en duurzaam boek. Zo ontstaan publicaties die niet alleen het heden vastleggen, maar ook een waardevol document vormen voor de toekomst.
+Met een passie voor beeld, industrie en storytelling creëert Viewvision Publishers boeken die de kracht van industriële ondernemingen zichtbaar maken.
+      </p>
+            <p>
+      View&Vision Publishers specializes in creating and publishing high-quality photo books for the industrial sector. With a strong focus on visual storytelling, Viewvision captures the world of technology, production, and industrial innovation in a compelling and inspiring way.
+Through striking photography and carefully designed publications, Viewvision documents the craftsmanship, people, and processes behind industrial companies. Each project is developed with meticulous attention to detail, quality, and authenticity, making the books both informative and visually engaging.
+Working closely with businesses, Viewvision translates their stories into tangible, lasting publications that not only showcase the present but also serve as valuable records for the future.
+With a passion for imagery, industry, and storytelling, Viewvision Publishers creates books that reveal the power and creativity of industrial enterprises.
+      </p>
+     </div>
+     <a>
+     <br>
+     </<a>
+<a href="mailto:info@viewvision.be">info@viewvision.be</a>
+    </div>
+  </div>  
       <div id="page-info">
           <p>Tom D’haenens (born 1969) is a Belgian artistic photographer and publisher of unique photo books. He received his photography education at the Ghent Academy of Arts. Later he moved to Baltimore (US) where he deeply inhaled the business life of the Metropolis of New York. He soon made quite a name in the international business world as a photographic artist with that special eye that makes the difference. 
 In this multinational environment he has always been fascinated by the exterior signs of economic and societal globalization. He has travelled to about every corner of the world, always on the lookout for that special unique shot that will capture the essence of a moment in time. In doing so he translates this world in terms of beauty and pathos. Nothing is dull, nothing is monotonous. Recognizing the rhetorical power of photography, D’haenens freezes his subject with a distinguished lightness. He possesses the ability to convert banal reality as much as unique human achievement into a brilliant image. In a split second, a detail of framed reality is given an unprecedented lustre that amazes his public. The unnoticed is given visibility that strikes us, catches us, teases us, triggers our curiosity and that challenges us to get a closer look into the story behind the picture. 
@@ -541,37 +588,7 @@ Living in America...
 <br>
 Photography is literally in D’haenens' genes. As a child he was fascinated by the medium and often borrowed his parents' camera. The seeds of a bright photographic future had been sown. From an early age, he was eager to discover the photographic equivalent of the world. That aspect has never left him until today; studio work, on the other hand, is not his cup of tea. "I need to feel and see the world," he says. 
         </p>
-      </div>
-  
-  <div id="logos">
-  <div>
-     <img src="logo-tom.jpg" alt="logo Tom D'haenens">
-     <p>School of Arts Ghent
-     <br>Baltimore School of Arts USA</p>
-     <p>Drone certificated pilot
-     <br>Bossiet - offshore certified</p>
-
-  </div>
-
-  <hr>
-
-  <div>
-      <img src="logo-vv.jpg" alt="logo View&Vision">
-      <p>
-      View&Vision Publishers specialiseert zich in het creëren en publiceren van hoogwaardige fotoboeken voor de industrie. Met een sterke focus op visuele storytelling brengt Viewvision de wereld van techniek, productie en industriële innovatie op een unieke en inspirerende manier in beeld.
-Door middel van krachtige fotografie en zorgvuldig vormgegeven publicaties documenteert Viewvision het vakmanschap, de mensen en de processen achter industriële bedrijven. Elk project wordt ontwikkeld met oog voor detail, kwaliteit en authenticiteit, waardoor de publicaties niet alleen informatief zijn, maar ook esthetisch aantrekkelijk.
-Viewvision Publishers werkt nauw samen met bedrijven om hun verhaal visueel te vertalen naar een tastbaar en duurzaam boek. Zo ontstaan publicaties die niet alleen het heden vastleggen, maar ook een waardevol document vormen voor de toekomst.
-Met een passie voor beeld, industrie en storytelling creëert Viewvision Publishers boeken die de kracht van industriële ondernemingen zichtbaar maken.
-      </p>
-
-      <p>
-      View&Vision Publishers specializes in creating and publishing high-quality photo books for the industrial sector. With a strong focus on visual storytelling, Viewvision captures the world of technology, production, and industrial innovation in a compelling and inspiring way.
-Through striking photography and carefully designed publications, Viewvision documents the craftsmanship, people, and processes behind industrial companies. Each project is developed with meticulous attention to detail, quality, and authenticity, making the books both informative and visually engaging.
-Working closely with businesses, Viewvision translates their stories into tangible, lasting publications that not only showcase the present but also serve as valuable records for the future.
-With a passion for imagery, industry, and storytelling, Viewvision Publishers creates books that reveal the power and creativity of industrial enterprises.
-      </p>
-    </div>
-  </div>     
+      </div>   
 </div>`;
     allcontainers.insertBefore(infoDiv, container);
       container.style.display = '';
