@@ -38,16 +38,33 @@ function escapeHtml(str = "") {
     .replace(/>/g, "&gt;");
 }
 
+const blobCache = new Map();
+
+async function fetchImageAsBlob(url) {
+  if (blobCache.has(url)) return blobCache.get(url);
+  const promise = fetch(url)
+    .then(r => {
+      if (!r.ok) throw new Error(`Image fetch failed: ${r.status}`);
+      return r.blob();
+    })
+    .then(blob => URL.createObjectURL(blob))
+    .catch(() => url);
+  blobCache.set(url, promise);
+  return promise;
+}
+
+function driveThumbUrl(id, size) {
+  return `https://drive.google.com/thumbnail?id=${id}&sz=${size}`;
+}
+
 function toggleNav(nav) {
-  const hamburger = document.getElementById("hamburger")
-
+  const hamburger = document.getElementById("hamburger");
   if (nav && nav.style) {
-    nav.style.display = nav.style.display != 'flex'? 'flex' : '';
+    nav.style.display = nav.style.display !== 'flex' ? 'flex' : '';
   }
-
   if (hamburger.classList.contains('hoverstate')) {
-    hamburger.classList.remove('hoverstate');  
-  }else{
+    hamburger.classList.remove('hoverstate');
+  } else {
     hamburger.classList.add('hoverstate');
   }
 }
@@ -82,7 +99,6 @@ async function driveFetch(queryParams) {
     pageSize: "1000",
     ...queryParams
   });
-
   const url = `https://www.googleapis.com/drive/v3/files?${params.toString()}`;
   const res = await fetch(url);
   return res.json();
@@ -100,9 +116,7 @@ async function buildRootFolderMap() {
     const q = `'${ROOT_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     const data = await driveFetch({ q, fields: "files(id,name)" });
     if (Array.isArray(data.files)) {
-      data.files.forEach(f => {
-        rootFolderMap[f.name] = f.id;
-      });
+      data.files.forEach(f => { rootFolderMap[f.name] = f.id; });
     }
   } catch (err) {
     console.error("Error building root folder map:", err);
@@ -113,19 +127,15 @@ async function showSubfolders(parentId, targetNavEl, options = {}, loadId = null
   targetNavEl.innerHTML = "";
   if (loadId == null) {
     loadId = ++navLoadCounter;
-    targetNavEl.dataset.loadId = String(loadId);
-  } else {
-    targetNavEl.dataset.loadId = String(loadId);
   }
+  targetNavEl.dataset.loadId = String(loadId);
   if (targetNavEl.dataset.loading === "true") return;
   targetNavEl.dataset.loading = "true";
   try {
     const q = `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     const data = await driveFetch({ q, fields: "files(id,name)" });
-    if (!data.files || data.files.length === 0) {
-      return;
-    }
-    data.files.sort((a,b) => (a.name||'').localeCompare(b.name||'', undefined, { numeric: true, sensitivity: 'base' }));
+    if (!data.files || data.files.length === 0) return;
+    data.files.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
     if (targetNavEl.dataset.loadId !== String(loadId)) return;
     data.files.forEach(folder => {
       if (targetNavEl.dataset.loadId !== String(loadId)) return;
@@ -136,7 +146,7 @@ async function showSubfolders(parentId, targetNavEl, options = {}, loadId = null
         const newLoadId = ++navLoadCounter;
         targetNavEl.dataset.loadId = String(newLoadId);
         loadFolder(folder.id, options);
-        toggleNav(nav)
+        toggleNav(nav);
       };
       targetNavEl.appendChild(d);
     });
@@ -152,14 +162,14 @@ function stripNumberPrefix(name) {
   return name.replace(/^\d+\.\s*/, '');
 }
 
-function preloadImage(src) {
-  return new Promise((resolve) => {
-    if (!src) return resolve({ src, ok: false });
-    const img = new Image();
-    img.onload = () => resolve({ src, ok: true });
-    img.onerror = () => resolve({ src, ok: false });
-    img.src = src;
-  });
+async function preloadImage(src) {
+  if (!src) return { src, ok: false };
+  try {
+    const blobUrl = await fetchImageAsBlob(src);
+    return { src: blobUrl, ok: true };
+  } catch {
+    return { src, ok: false };
+  }
 }
 
 function findFolderIdByName(name) {
@@ -179,8 +189,41 @@ function buildInfoLinksFromFilename(filename) {
   return parts.map(p => p.trim()).filter(p => p.length);
 }
 
+function splitTextByFirstParagraph(text) {
+  if (!text) return { first: '', rest: '' };
+  const paragraphs = text.split(/\n\n+/);
+  if (paragraphs.length === 0) return { first: '', rest: '' };
+  const first = paragraphs[0];
+  const rest = paragraphs.slice(1).join('\n\n');
+  return { first, rest };
+}
+
+function getBookLayoutConfig() {
+  const width = window.innerWidth;
+  if (width < 1000) {
+    return { isResponsive: true, splitInfo: true };
+  }
+  return { isResponsive: false, splitInfo: false };
+}
+
+function renderTextIntoContainer(text, targetEl) {
+  targetEl.innerHTML = "";
+  const paragraphs = text.split(/\n\n+/);
+  paragraphs.forEach(para => {
+    const trimmed = para.trim();
+    if (!trimmed) return;
+    const p = document.createElement("p");
+    p.innerHTML = escapeHtml(trimmed).replace(/\n/g, "<br>");
+    targetEl.appendChild(p);
+  });
+}
+
 async function loadFolder(folderId, options = { isBook: false, showText: true }) {
   removeInfo();
+  blobCache.forEach((promise, url) => {
+    promise.then(blobUrl => { if (blobUrl && blobUrl.startsWith("blob:")) URL.revokeObjectURL(blobUrl); });
+  });
+  blobCache.clear();
   const session = ++loadSessionCounter;
   activeLoadSession = session;
   loadingFolderId = folderId;
@@ -203,12 +246,11 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
     });
     if (session !== activeLoadSession) return;
     if (!data.files || data.files.length === 0) {
-      if (session === activeLoadSession) {
-        allcontainers.classList.remove("loading");
-        loadingFolderId = null;
-      }
+      allcontainers.classList.remove("loading");
+      loadingFolderId = null;
       return;
     }
+
     const resolved = data.files.map(f => {
       if (f.mimeType === "application/vnd.google-apps.shortcut" && f.shortcutDetails && f.shortcutDetails.targetId) {
         return {
@@ -219,7 +261,8 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       }
       return f;
     });
-    resolved.sort((a,b) => (a.name||'').localeCompare(b.name||'', undefined, { numeric: true, sensitivity: 'base' }));
+    resolved.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
+
     const textFiles = resolved.filter(f => {
       const name = (f.name || "").toLowerCase();
       return name.endsWith(".txt") || (f.mimeType || "").toLowerCase() === "text/plain";
@@ -228,33 +271,33 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
       const mt = (f.mimeType || "").toLowerCase();
       return mt.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name || "");
     });
-    imageFiles.sort((a,b) => (a.name||'').localeCompare(b.name||'', undefined, { numeric: true, sensitivity: 'base' }));
+    imageFiles.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
+
     let coverFile = null;
     if (options.isBook) {
-      const coverIdx = imageFiles.findIndex(f => /^cover\.(jpg|jpeg|png|webp)$/i.test((f.name || "")));
+      const coverIdx = imageFiles.findIndex(f => /^cover\.(jpg|jpeg|png|webp)$/i.test(f.name || ""));
       if (coverIdx !== -1) {
         coverFile = imageFiles.splice(coverIdx, 1)[0];
-      } else {
-        if (imageFiles.length === 1) {
-          coverFile = imageFiles.shift();
-        }
+      } else if (imageFiles.length === 1) {
+        coverFile = imageFiles.shift();
       }
     }
+
     const preloadPromises = [];
     let coverUrl = null;
     if (coverFile) {
-      coverUrl = `https://drive.google.com/thumbnail?id=${coverFile.id}&sz=w600`;
-      preloadPromises.push(preloadImage(coverUrl));
+      coverUrl = driveThumbUrl(coverFile.id, "w600");
+      preloadPromises.push(fetchImageAsBlob(coverUrl));
     }
-    const thumbUrls = imageFiles.map(f => `https://drive.google.com/thumbnail?id=${f.id}&sz=${options.isBook ? 'w800' : 'w400'}`);
-    thumbUrls.forEach(u => preloadImage(u));
+    const thumbFetchPromises = imageFiles.map(f => fetchImageAsBlob(driveThumbUrl(f.id, "w400&crop=smart")));
+    thumbFetchPromises.forEach(p => preloadPromises.push(p));
+
     let textFetchPromise = null;
     let chosenTextFile = null;
     if (options.showText && textFiles.length > 0) {
-      const preferredNames = ["readme", "info", "description"];
       let chosen = textFiles[0];
-      for (const pref of preferredNames) {
-        const found = textFiles.find(f => ((f.name || "").toLowerCase().startsWith(pref)));
+      for (const pref of ["info"]) {
+        const found = textFiles.find(f => (f.name || "").toLowerCase().startsWith(pref));
         if (found) { chosen = found; break; }
       }
       chosenTextFile = chosen;
@@ -263,67 +306,108 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
         .catch(err => ({ ok: false, error: err }));
       preloadPromises.push(textFetchPromise);
     }
-    await Promise.allSettled(preloadPromises);
+
+    const settled = await Promise.allSettled(preloadPromises);
     if (session !== activeLoadSession) return;
-    allcontainers.classList.toggle('book-view', !!options.isBook);
-    container.classList.toggle('book-spreads', !!options.isBook);
+
+    let coverBlobUrl = coverUrl;
+    if (coverFile) {
+      const coverResult = settled[0];
+      if (coverResult.status === "fulfilled") coverBlobUrl = coverResult.value;
+    }
+
+    const thumbBlobUrls = imageFiles.map((_, i) => {
+      const offset = coverFile ? 1 : 0;
+      const r = settled[offset + i];
+      return (r && r.status === "fulfilled") ? r.value : driveThumbUrl(imageFiles[i].id, "w400&crop=smart");
+    });
+
+    const isBookView = !!options.isBook;
+    const layoutConfig = getBookLayoutConfig();
+
+    allcontainers.classList.toggle('book-view', isBookView);
+    container.classList.toggle('book-spreads', isBookView);
     currentImages = imageFiles.slice();
+
     if (coverFile) {
       const imgEl = document.createElement("img");
       imgEl.className = "book-cover";
-      imgEl.src = coverUrl;
-      imgEl.alt = coverFile.name || "Cover";
-      imgEl.loading = "lazy";
+      imgEl.src = coverBlobUrl;
+      imgEl.alt = "";
+      imgEl.draggable = false;
       coverContainer.appendChild(imgEl);
     }
+
+    let textFirstPart = null;
+    let textRestPart = null;
+
     if (chosenTextFile && textFetchPromise) {
       try {
         const maybe = await textFetchPromise;
         if (session !== activeLoadSession) return;
         if (maybe && maybe.ok && typeof maybe.text === "string") {
-          const textEl = document.createElement("div");
-          textEl.className = "folder-description";
-          textEl.innerHTML = escapeHtml(maybe.text).replace(/\n/g, "<br>");
-          descriptionContainer.classList.add("open");
-          hrContainer.classList.add("open");
-          descriptionContainer.appendChild(textEl);
-          if (options.isBook) {
-            coverContainer.appendChild(descriptionContainer);
+          if (isBookView && layoutConfig.splitInfo) {
+            const { first, rest } = splitTextByFirstParagraph(maybe.text);
+            textFirstPart = first;
+            textRestPart = rest;
           } else {
-            allcontainers.appendChild(descriptionContainer);
+            textFirstPart = maybe.text;
           }
         }
       } catch (e) {
         console.error("Failed to render text file:", e);
       }
-    } else {
-      if (session !== activeLoadSession) return;
-      if (options.isBook) {
-        coverContainer.appendChild(descriptionContainer);
-      } else {
-        allcontainers.appendChild(descriptionContainer);
-      }
     }
+
+    if (session !== activeLoadSession) return;
+
+    if (isBookView) {
+      if (textFirstPart && layoutConfig.splitInfo) {
+        const coverDescContainer = document.createElement("div");
+        coverDescContainer.className = "description-container";
+        renderTextIntoContainer(textFirstPart, coverDescContainer);
+        coverContainer.appendChild(coverDescContainer);
+      } else if (textFirstPart) {
+        renderTextIntoContainer(textFirstPart, descriptionContainer);
+        descriptionContainer.classList.add("open");
+      }
+      coverContainer.appendChild(descriptionContainer);
+    } else {
+      if (textFirstPart) {
+        renderTextIntoContainer(textFirstPart, descriptionContainer);
+        descriptionContainer.classList.add("open");
+      }
+      allcontainers.appendChild(descriptionContainer);
+    }
+
     container.innerHTML = "";
-    const isBookView = !!options.isBook;
     imageFiles.forEach((file, idx) => {
       if (session !== activeLoadSession) return;
+      const blobSrc = thumbBlobUrls[idx];
       if (isBookView) {
         const img = document.createElement("img");
         img.className = "spread noclick";
-        img.src = `https://drive.google.com/thumbnail?id=${file.id}&sz=w800`;
-        img.loading = "lazy";
+        img.src = blobSrc;
+        img.alt = "";
+        img.draggable = false;
         coverContainer.classList.add("open");
         container.appendChild(img);
       } else {
         const tile = document.createElement("div");
         tile.className = "thumb";
-        tile.dataset.index = idx;
-        tile.style.backgroundImage = `url(https://drive.google.com/thumbnail?id=${file.id}&sz=w400)`;
+        tile.dataset.index = String(idx);
+        tile.style.backgroundImage = `url(${blobSrc})`;
         tile.onclick = () => openLightbox(idx);
         container.appendChild(tile);
       }
     });
+
+    if (isBookView && layoutConfig.splitInfo && textRestPart) {
+      const restDescContainer = document.createElement("div");
+      restDescContainer.className = "description-container";
+      renderTextIntoContainer(textRestPart, restDescContainer);
+      allcontainers.appendChild(restDescContainer);
+    }
   } catch (err) {
     console.error("Error loading folder:", err);
   } finally {
@@ -379,10 +463,23 @@ function populateInfoLinksForFile(file) {
   });
 }
 
+function getLightboxBlobUrl(index) {
+  const file = currentImages[index];
+  if (!file) return Promise.resolve(null);
+  const url = driveThumbUrl(file.id, "w1200");
+  return fetchImageAsBlob(url);
+}
+
+function preloadNeighbours(index) {
+  const prev = (index - 1 + currentImages.length) % currentImages.length;
+  const next = (index + 1) % currentImages.length;
+  getLightboxBlobUrl(prev);
+  getLightboxBlobUrl(next);
+}
+
 function renderLightbox() {
   const file = currentImages[currentIndex];
   if (!file) return;
-  const fullUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1200`;
   lightbox.innerHTML = `
     <div class="lightbox__content" role="dialog" aria-modal="true" aria-label="${escapeHtml(file.name)}">
       <div class="lightbox__controls">
@@ -392,7 +489,7 @@ function renderLightbox() {
         </div>
         <button class="btn" data-role="close" aria-label="Close">x</button>
       </div>
-      <img class="lightbox__img" src="${fullUrl}" alt="${escapeHtml(file.name)}" />
+      <img class="lightbox__img" src="" alt="" draggable="false" />
       <div class="lightbox__nav">
         <div class="lightbox__info"></div>
         <button data-role="prev" aria-label="Previous"><</button>
@@ -403,17 +500,27 @@ function renderLightbox() {
   lightbox.querySelector('[data-role="close"]').addEventListener("click", closeLightbox);
   lightbox.querySelector('[data-role="prev"]').addEventListener("click", showPrev);
   lightbox.querySelector('[data-role="next"]').addEventListener("click", showNext);
+  lightbox.addEventListener("touchstart", onTouchStart, false);
+  lightbox.addEventListener("touchend", onTouchEnd, false);
   populateInfoLinksForFile(file);
+  getLightboxBlobUrl(currentIndex).then(blobUrl => {
+    const img = lightbox.querySelector(".lightbox__img");
+    if (img && blobUrl) img.src = blobUrl;
+  });
+  preloadNeighbours(currentIndex);
 }
 
 function updateLightboxImage() {
   const file = currentImages[currentIndex];
   if (!file) return;
-  const img = lightbox.querySelector(".lightbox__img");
-  if (img) img.src = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1200`;
   const content = lightbox.querySelector(".lightbox__content");
   if (content) content.setAttribute("aria-label", file.name);
   populateInfoLinksForFile(file);
+  getLightboxBlobUrl(currentIndex).then(blobUrl => {
+    const img = lightbox.querySelector(".lightbox__img");
+    if (img && blobUrl) img.src = blobUrl;
+  });
+  preloadNeighbours(currentIndex);
 }
 
 function onKeyDown(e) {
@@ -423,6 +530,31 @@ function onKeyDown(e) {
   else if (e.key === "ArrowRight") showNext();
 }
 
+let touchStartX = 0;
+let touchEndX = 0;
+let touchStartY = 0;
+let touchEndY = 0;
+
+function handleSwipe() {
+  const diffX = touchEndX - touchStartX;
+  const diffY = touchEndY - touchStartY;
+  if (Math.abs(diffY) > Math.abs(diffX)) return;
+  if (Math.abs(diffX) < 50) return;
+  if (diffX > 0) showPrev();
+  else showNext();
+}
+
+function onTouchStart(e) {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}
+
+function onTouchEnd(e) {
+  touchEndX = e.changedTouches[0].screenX;
+  touchEndY = e.changedTouches[0].screenY;
+  handleSwipe();
+}
+
 function toggleSubfolderNav(folderName, targetNavEl, staticEl, otherNavEl) {
   if (targetNavEl.children.length) {
     targetNavEl.innerHTML = "";
@@ -430,7 +562,7 @@ function toggleSubfolderNav(folderName, targetNavEl, staticEl, otherNavEl) {
     allcontainers.appendChild(descriptionContainer);
     descriptionContainer.innerHTML = "";
     container.innerHTML = "";
-    containers.innerHTML ="";
+    allcontainers.innerHTML = "";
     delete targetNavEl.dataset.loadId;
     return;
   }
@@ -455,13 +587,13 @@ async function init() {
       if (driveNavBooks) driveNavBooks.innerHTML = "";
       if (coverContainer) coverContainer.innerHTML = "";
       if (descriptionContainer) descriptionContainer.innerHTML = "";
-      if (descriptionContainer && descriptionContainer.classList) descriptionContainer.classList.remove("open");
-      if (hrContainer && hrContainer.classList) hrContainer.classList.remove("open");
-      if (lightbox && lightbox.classList) lightbox.classList.remove("open");
-      if (container && container.classList) container.classList.remove("close");
-      if (allcontainers && allcontainers.classList) allcontainers.classList.remove("close");
+      if (descriptionContainer) descriptionContainer.classList.remove("open");
+      if (hrContainer) hrContainer.classList.remove("open");
+      if (lightbox) lightbox.classList.remove("open");
+      if (container) container.classList.remove("close");
+      if (allcontainers) allcontainers.classList.remove("close");
       loadFolder(ROOT_FOLDER_ID, { isBook: false, showText: false });
-      toggleNav(nav)
+      toggleNav(nav);
     };
   }
 
@@ -478,25 +610,25 @@ async function init() {
   }
 
   if (staticInfo) {
-      staticInfo.onclick = () => {
+    staticInfo.onclick = () => {
       removeInfo();
       if (driveNavProjects) driveNavProjects.innerHTML = "";
       if (driveNavBooks) driveNavBooks.innerHTML = "";
       if (coverContainer) coverContainer.innerHTML = "";
       if (descriptionContainer) descriptionContainer.innerHTML = "";
       if (container) container.innerHTML = "";
-      if (descriptionContainer && descriptionContainer.classList) descriptionContainer.classList.remove("open");
-      if (hrContainer && hrContainer.classList) hrContainer.classList.remove("open");
-      if (lightbox && lightbox.classList) lightbox.classList.remove("open");
-      if (container && container.classList) container.classList.add("close");
-      if (coverContainer && coverContainer.classList) coverContainer.classList.remove("open");
-      if (allcontainers && allcontainers.classList) allcontainers.classList.remove("close");
+      if (descriptionContainer) descriptionContainer.classList.remove("open");
+      if (hrContainer) hrContainer.classList.remove("open");
+      if (lightbox) lightbox.classList.remove("open");
+      if (container) container.classList.add("close");
+      if (coverContainer) coverContainer.classList.remove("open");
+      if (allcontainers) allcontainers.classList.remove("close");
 
       if (!document.getElementById('page-info')) {
-      const infoDiv = document.createElement('div');
-      infoDiv.id = 'page-info';
-      infoDiv.className = 'info';
-      infoDiv.innerHTML = `
+        const infoDiv = document.createElement('div');
+        infoDiv.id = 'page-info';
+        infoDiv.className = 'info';
+        infoDiv.innerHTML = `
         <div id="logos">
   <div id="logo-links">
     <div>
@@ -509,12 +641,15 @@ async function init() {
      <br>Bossiet - offshore certified</p>
      <br>
      <p>
-     Tom D’haenens (born 1969) is a Belgian artistic photographer and publisher of unique photo books. He received his photography education at the Ghent Academy of Arts. Later he moved to Baltimore (US) where he deeply inhaled the business life of the Metropolis of New York. He soon made quite a name in the international business world as a photographic artist with that special eye that makes the difference. Tom D’haenens’ pictures have immortalized the most prestigious projects of a large number of multinationals in a number of amazing photo books.
+     Tom D'haenens (born 1969) is a Belgian artistic photographer and publisher of unique photo books. He received his photography education at the Ghent Academy of Arts. Later he moved to Baltimore (US) where he deeply inhaled the business life of the Metropolis of New York. He soon made quite a name in the international business world as a photographic artist with that special eye that makes the difference. Tom D'haenens' pictures have immortalized the most prestigious projects of a large number of multinationals in a number of amazing photo books.
      </p>
     </div>
      <div>
      <br>
-      <p>For quotes, availability, or just a chat about your next photography project, email or call me directly on <a href="">+32 475 25 82 15</a></p>
+      <p>For quotes, availability, or just a chat about your next photography project, email or call me directly on
+      <br>
+      <br>
+      <a href="">+32 475 258 215</a></p>
       <a href="mailto:tom@viewvision.be">tom@viewvision.be</a>
       </div>
   </div>
@@ -539,26 +674,17 @@ With a passion for imagery, industry, and storytelling, Viewvision Publishers cr
      </div>
      <a>
      <br>
-     </<a>
+     </a>
 <a href="mailto:info@viewvision.be">info@viewvision.be</a>
     </div>
   </div>  
       <div id="page-info">
                 <div id="quote">
           <blockquote>
-          Tom D’haenens mag zich als fotograaf terecht het epitheton peintre de la vie postmoderne toe-eigenen. D’haenens illustreert naast de thema’s die tegenwoordig in stedenbouwkundige theorieën centraal staan ook de maatschappelijke en economische facetten van de globalisering. Grote kantoorgebouwen, atria, monoculturele woonwijken, technologische bedrijven, shopping malls, luchthavens, hotellobby’s kortom de nieuwe spaces of flow worden door deze jonge fotograaf in heldere kleuren en zonder complexen neergezet.  In zijn werk wordt deze gefotografeerde wereld vertaald in termen van schoonheid en pathos. D’haenens is ruimschoots vertrouwd met zowel de geschiedenis van de fotografie als haar retorisch vermogen. Wie zijn prenten bestudeert, voelt doorheen zijn kunst de trilling van coryfeeën als Ansel Adams, Margaret Bourk-White, Stieglitz, Walker Evans, Edward Weston en talloze andere goden. Jawel, zijn fotokunst wortelt in de Amerikaanse traditie van ongedwongenheid, ze bezit bovendien de gave om banale realiteit in een nieuw daglicht te zetten. En natuurlijk is er de Amerikaanse erfenis van de school van Baltimore die D’haenens met zich meedraagt. Beelden van een ingesnoerde werkelijkheid waar we doorgaans onachtzaam aan voorbijgaan worden boeiend en interessant bevonden. D’haenens geeft het postmoderne tijdvak een ongekende en verleidelijke glans die zich spiegelt in het detail. Vraag is hoe we die glans moeten lezen. Zijn beelden in se wel zo onschuldig als ze zich voordoen?  Feit is dat D’haenens een wereld voor zich heeft die in toenemende mate uit niet-plaatsen bestaat. Ze zijn vooral te vinden op het terrein van de mobiliteit en de consumptie: hotels, supermarkten, winkelcentra, pleisterplaatsen langs de snelweg en vliegvelden. Het zijn de hyperspaces van deze tijd, ze verbeelden de evacuatie van de publieke ruimte.
+          Tom D'haenens mag zich als fotograaf terecht het epitheton peintre de la vie postmoderne toe-eigenen. D'haenens illustreert naast de thema's die tegenwoordig in stedenbouwkundige theorieën centraal staan ook de maatschappelijke en economische facetten van de globalisering. Grote kantoorgebouwen, atria, monoculturele woonwijken, technologische bedrijven, shopping malls, luchthavens, hotellobby's kortom de nieuwe spaces of flow worden door deze jonge fotograaf in heldere kleuren en zonder complexen neergezet.  In zijn werk wordt deze gefotografeerde wereld vertaald in termen van schoonheid en pathos. D'haenens is ruimschoots vertrouwd met zowel de geschiedenis van de fotografie als haar retorisch vermogen. Wie zijn prenten bestudeert, voelt doorheen zijn kunst de trilling van coryfeeën als Ansel Adams, Margaret Bourk-White, Stieglitz, Walker Evans, Edward Weston en talloze andere goden. Jawel, zijn fotokunst wortelt in de Amerikaanse traditie van ongedwongenheid, ze bezit bovendien de gave om banale realiteit in een nieuw daglicht te zetten. En natuurlijk is er de Amerikaanse erfenis van de school van Baltimore die D'haenens met zich meedraagt. Beelden van een ingesnoerde werkelijkheid waar we doorgaans onachtzaam aan voorbijgaan worden boeiend en interessant bevonden. D'haenens geeft het postmoderne tijdvak een ongekende en verleidelijke glans die zich spiegelt in het detail. Vraag is hoe we die glans moeten lezen. Zijn beelden in se wel zo onschuldig als ze zich voordoen?  Feit is dat D'haenens een wereld voor zich heeft die in toenemende mate uit niet-plaatsen bestaat. Ze zijn vooral te vinden op het terrein van de mobiliteit en de consumptie: hotels, supermarkten, winkelcentra, pleisterplaatsen langs de snelweg en vliegvelden. Het zijn de hyperspaces van deze tijd, ze verbeelden de evacuatie van de publieke ruimte.
           </blockquote>
           <p id="auteur">– Philip Willaert</p>
           </div>
-          <p> 
-In this multinational environment he has always been fascinated by the exterior signs of economic and societal globalization. He has travelled to about every corner of the world, always on the lookout for that special unique shot that will capture the essence of a moment in time. In doing so he translates this world in terms of beauty and pathos. Nothing is dull, nothing is monotonous. Recognizing the rhetorical power of photography, D’haenens freezes his subject with a distinguished lightness. He possesses the ability to convert banal reality as much as unique human achievement into a brilliant image. In a split second, a detail of framed reality is given an unprecedented lustre that amazes his public. The unnoticed is given visibility that strikes us, catches us, teases us, triggers our curiosity and that challenges us to get a closer look into the story behind the picture. 
-Tom D’haenens’ pictures have immortalized the most prestigious projects of a large number of multinationals in a number of amazing photo books, including the prize-winning ‘Brussels Airport’, ‘The Port of Antwerp’, ‘Flanders Port Area’, ‘Creating Land for the Future, ‘Ghent, so much city’, ‘Flanders State of the Arts’ and many more.
-He is an expert in bringing together a panoply of the most diverse elements into original concepts, with a unique eye for colour, light, contrast and detail: his absolute trademark today.</p>
-
-          <p>Tom D'haenens has been photographing at home and abroad for more than 30 years. He has been commissioned by multinationals and international governments. In his twenties he completed his education at the Academy of Fine Arts in Ghent and moved to Baltimore, USA to study the art of photography. In New York he quickly made a name for himself. He has photographed some of the most prestigious projects for a large number of multinationals. He later returned to his first love: industry. As a result, industry and architecture have become his playground. He has become an expert in bringing both elements together in highly original concepts with an eye for colour and detail. In fact, they have become his trademark.
-Tom portrays the economic portals of countries and the industry within them in his own individual way. His work is a unique combination of technical precision and artistic vision. His artful approach to industry has made him a global pioneer in his field.
-You may have seen something 1000 times, yet Tom shows that the 1001st time can still make a difference. That difference is in an unusual angle, a different light, a chance moment. The curiosity about that one time when an image rises above banality is what keeps him restless, even now, after thirty years of photography and seeing the world. The photographs imply that there is still more, before and after, both in space and in time. Anyone who looks at them will automatically add to them. That is how it is intended to be. His photos don't stop at the margin. He loves nothing more than to stimulate our curiosity and feed our imagination. He challenges us to make our own interpretation in his photographs and to discover something different each time. Hence his urge to collect photos in books. Photo books as viewing books, search books, discovery books.
-          </p>
 
           <div id="tekstblok">
           <p><em>I look at the world as it is</em>
@@ -577,7 +703,7 @@ Tom D'haenens will never disregard the role of man as scenarist of the great pro
 <br><br>
 <em>Citizen of the world</em>
 <br>
-Countless travels and tours have made D'haenens a citizen of the world. He braves oceans, deserts, mountain passes and deep valleys on missions that demand a lot of energy. D’haenens catalogues himself as a location photographer. His assignments come from all continents.
+Countless travels and tours have made D'haenens a citizen of the world. He braves oceans, deserts, mountain passes and deep valleys on missions that demand a lot of energy. D'haenens catalogues himself as a location photographer. His assignments come from all continents.
 
 The photographer is at his best when capturing industrial processes, airports, seaports and architecture. They are a snapshot of optimism and far-reaching innovation in various sectors. D'haenens frames his subjects with great precision and sharpness to reveal the true essence of reality. But also to depict the belief in a better future, translated into pure lines and structures with great aplomb. By playing with distance and cropping, many images take on the allure of an abstract painting. For instance, he metamorphoses an ordinary salt mountain into a mighty snowy landscape. The curvy shapes of a female nude flow seamlessly into the glowing sand plains of the Sahara. It has become his trademark to perceive reality differently, to create a contemporary world in which everything is rethought or reinvented.
 <br><br>
@@ -585,19 +711,19 @@ The photographer is at his best when capturing industrial processes, airports, s
 <br>
 Enchantment and candid enthusiasm are reflected in his images through never-before-seen viewpoints. A man welding seems to have ended up in a brutal roller coaster of a Bond film because of the cinematic light. It takes some effort from the viewer to thoroughly analyse the image. D'haenens forces the viewer to look and in doing so, he also exposes the ambiguity and essence of photography. "People only see what they already know and understand," Goethe wrote. Photographic images are normally subject to a powerful image theory, which makes it difficult for the viewer to see that there is not always an image. Great is the desire to see something recognizable.
 
-How exhausting is photography? According to D'haenens, there is always that eternal doubt, but that is precisely what keeps him sharp. It keeps him focused and alert. What D'haenens shows to the outside world is often what is called ‘le jamais vu’. Showing what the eye has never seen before. That is what makes D'haenens’ unique style, which has given him worldwide fame. The photographer as the modern Columbus who bundles the invisible contours of the Global World into a captivating anthology. Whether he believes in the 'decisive moment’? Is the photographer an all-seeing Zen Buddhist? Tom D'haenens puts things in perspective. In some cases, the moment counts, like the photograph showing hundreds of students listening to a speech. According to the photographer, by framing the picture differently, without a stage, you get an autonomous artistic print, the work and especially the photography stand on its own and the medium presents its enigmatic ambiguity. However, most images are not detached from the world. "I look at the world as it is," is his motto.
+How exhausting is photography? According to D'haenens, there is always that eternal doubt, but that is precisely what keeps him sharp. It keeps him focused and alert. What D'haenens shows to the outside world is often what is called 'le jamais vu'. Showing what the eye has never seen before. That is what makes D'haenens' unique style, which has given him worldwide fame. The photographer as the modern Columbus who bundles the invisible contours of the Global World into a captivating anthology. Whether he believes in the 'decisive moment'? Is the photographer an all-seeing Zen Buddhist? Tom D'haenens puts things in perspective. In some cases, the moment counts, like the photograph showing hundreds of students listening to a speech. According to the photographer, by framing the picture differently, without a stage, you get an autonomous artistic print, the work and especially the photography stand on its own and the medium presents its enigmatic ambiguity. However, most images are not detached from the world. "I look at the world as it is," is his motto.
 <br><br>
 <em>Living in America...</em>
 <br>
-Photography is literally in D’haenens' genes. As a child he was fascinated by the medium and often borrowed his parents' camera. The seeds of a bright photographic future had been sown. From an early age, he was eager to discover the photographic equivalent of the world. That aspect has never left him until today; studio work, on the other hand, is not his cup of tea. "I need to feel and see the world," he says. 
+Photography is literally in D'haenens' genes. As a child he was fascinated by the medium and often borrowed his parents' camera. The seeds of a bright photographic future had been sown. From an early age, he was eager to discover the photographic equivalent of the world. That aspect has never left him until today; studio work, on the other hand, is not his cup of tea. "I need to feel and see the world," he says. 
         </p>
       </div>   
 </div>`;
-    allcontainers.insertBefore(infoDiv, container);
-      container.style.display = '';
-    }
-  };
-}
+        allcontainers.insertBefore(infoDiv, container);
+        container.style.display = '';
+      }
+    };
+  }
 
   if (staticPortfolio && typeof staticPortfolio.click === "function") {
     staticPortfolio.click();
