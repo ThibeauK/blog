@@ -426,6 +426,7 @@ function openLightbox(index) {
   allcontainers.classList.add("close");
   lightbox.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
+  document.documentElement.style.overflow = "hidden";
   window.addEventListener("keydown", onKeyDown);
 }
 
@@ -436,6 +437,7 @@ function closeLightbox() {
   lightbox.setAttribute("aria-hidden", "true");
   lightbox.innerHTML = "";
   document.body.style.overflow = "";
+  document.documentElement.style.overflow = "";
   window.removeEventListener("keydown", onKeyDown);
 }
 
