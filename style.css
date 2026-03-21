@@ -503,6 +503,10 @@ button:hover{
         background-color: white;
     }
 
+    .lightbox__content{
+        height: 100vh;
+    }
+
 
     .lightbox__img{
         height: auto;
