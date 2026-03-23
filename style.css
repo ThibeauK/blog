@@ -505,6 +505,7 @@ button:hover{
 
     .lightbox__content{
         height: 100vh;
+        padding: 3em 1em 5em 1em;
     }
 
 
