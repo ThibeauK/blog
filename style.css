@@ -481,7 +481,7 @@ button:hover {
     }
 
     .lightbox__content {
-        padding: 3em 2em 5em 2em;
+        padding: 2em;
         height: 100vh;
         height: 100dvh;
         box-sizing: border-box;
