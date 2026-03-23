@@ -42,25 +42,6 @@ function driveThumbUrl(id, size) {
   return `https://drive.google.com/thumbnail?id=${id}&sz=${size}`;
 }
 
-function driveExportUrl(id) {
-  return `https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${API_KEY}`;
-}
-
-const blobCache = new Map();
-
-async function fetchImageAsBlob(url) {
-  if (blobCache.has(url)) return blobCache.get(url);
-  const promise = fetch(url)
-    .then(r => {
-      if (!r.ok) throw new Error(`Image fetch failed: ${r.status}`);
-      return r.blob();
-    })
-    .then(blob => URL.createObjectURL(blob))
-    .catch(() => null);
-  blobCache.set(url, promise);
-  return promise;
-}
-
 function toggleNav(nav) {
   const hamburger = document.getElementById("hamburger");
   if (nav && nav.style) {
@@ -216,7 +197,6 @@ function renderTextIntoContainer(text, targetEl) {
 
 async function loadFolder(folderId, options = { isBook: false, showText: true }) {
   removeInfo();
-  blobCache.clear();
   const session = ++loadSessionCounter;
   activeLoadSession = session;
   loadingFolderId = folderId;
@@ -466,18 +446,19 @@ function populateInfoLinksForFile(file) {
   });
 }
 
-function getLightboxBlobUrl(index) {
+function getLightboxUrl(index) {
   const file = currentImages[index];
-  if (!file) return Promise.resolve(null);
-  const url = driveExportUrl(file.id);
-  return fetchImageAsBlob(url);
+  if (!file) return null;
+  return driveThumbUrl(file.id, "w1600");
 }
 
 function preloadNeighbours(index) {
   const prev = (index - 1 + currentImages.length) % currentImages.length;
   const next = (index + 1) % currentImages.length;
-  getLightboxBlobUrl(prev);
-  getLightboxBlobUrl(next);
+  [prev, next].forEach(i => {
+    const url = getLightboxUrl(i);
+    if (url) { const img = new Image(); img.src = url; }
+  });
 }
 
 function renderLightbox() {
@@ -492,7 +473,7 @@ function renderLightbox() {
         </div>
         <button class="btn" data-role="close" aria-label="Close">x</button>
       </div>
-      <img class="lightbox__img" src="" alt="" draggable="false" />
+      <img class="lightbox__img" src="${getLightboxUrl(currentIndex)}" alt="" draggable="false" />
       <div class="lightbox__nav">
         <div class="lightbox__info"></div>
         <button data-role="prev" aria-label="Previous"><</button>
@@ -506,23 +487,17 @@ function renderLightbox() {
   lightbox.addEventListener("touchstart", onTouchStart, false);
   lightbox.addEventListener("touchend", onTouchEnd, false);
   populateInfoLinksForFile(file);
-  getLightboxBlobUrl(currentIndex).then(blobUrl => {
-    const img = lightbox.querySelector(".lightbox__img");
-    if (img && blobUrl) img.src = blobUrl;
-  });
   preloadNeighbours(currentIndex);
 }
 
 function updateLightboxImage() {
   const file = currentImages[currentIndex];
   if (!file) return;
+  const img = lightbox.querySelector(".lightbox__img");
+  if (img) img.src = getLightboxUrl(currentIndex);
   const content = lightbox.querySelector(".lightbox__content");
   if (content) content.setAttribute("aria-label", file.name);
   populateInfoLinksForFile(file);
-  getLightboxBlobUrl(currentIndex).then(blobUrl => {
-    const img = lightbox.querySelector(".lightbox__img");
-    if (img && blobUrl) img.src = blobUrl;
-  });
   preloadNeighbours(currentIndex);
 }
 
