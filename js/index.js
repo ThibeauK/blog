@@ -38,6 +38,14 @@ function escapeHtml(str = "") {
     .replace(/>/g, "&gt;");
 }
 
+function driveThumbUrl(id, size) {
+  return `https://drive.google.com/thumbnail?id=${id}&sz=${size}`;
+}
+
+function driveExportUrl(id) {
+  return `https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${API_KEY}`;
+}
+
 const blobCache = new Map();
 
 async function fetchImageAsBlob(url) {
@@ -48,13 +56,9 @@ async function fetchImageAsBlob(url) {
       return r.blob();
     })
     .then(blob => URL.createObjectURL(blob))
-    .catch(() => url);
+    .catch(() => null);
   blobCache.set(url, promise);
   return promise;
-}
-
-function driveThumbUrl(id, size) {
-  return `https://drive.google.com/thumbnail?id=${id}&sz=${size}`;
 }
 
 function toggleNav(nav) {
@@ -72,6 +76,8 @@ function toggleNav(nav) {
 function removeInfo() {
   const infoEl = document.getElementById('page-info');
   if (infoEl) infoEl.remove();
+  const restDesc = document.getElementById('description-container-rest');
+  if (restDesc) restDesc.remove();
   if (container) {
     container.style.display = '';
     container.classList.remove('close');
@@ -162,16 +168,6 @@ function stripNumberPrefix(name) {
   return name.replace(/^\d+\.\s*/, '');
 }
 
-async function preloadImage(src) {
-  if (!src) return { src, ok: false };
-  try {
-    const blobUrl = await fetchImageAsBlob(src);
-    return { src: blobUrl, ok: true };
-  } catch {
-    return { src, ok: false };
-  }
-}
-
 function findFolderIdByName(name) {
   const lc = (name || '').toLowerCase();
   for (const key of Object.keys(rootFolderMap)) {
@@ -220,17 +216,15 @@ function renderTextIntoContainer(text, targetEl) {
 
 async function loadFolder(folderId, options = { isBook: false, showText: true }) {
   removeInfo();
-  blobCache.forEach((promise, url) => {
-    promise.then(blobUrl => { if (blobUrl && blobUrl.startsWith("blob:")) URL.revokeObjectURL(blobUrl); });
-  });
   blobCache.clear();
   const session = ++loadSessionCounter;
   activeLoadSession = session;
   loadingFolderId = folderId;
   container.innerHTML = "";
   coverContainer.innerHTML = "";
-  descriptionContainer.innerHTML = "";
+  coverContainer.classList.add("loading-cover");
   coverContainer.classList.remove("open");
+  descriptionContainer.innerHTML = "";
   allcontainers.classList.add("loading");
   descriptionContainer.classList.remove("open");
   hrContainer.classList.remove("open");
@@ -287,10 +281,7 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
     let coverUrl = null;
     if (coverFile) {
       coverUrl = driveThumbUrl(coverFile.id, "w600");
-      preloadPromises.push(fetchImageAsBlob(coverUrl));
     }
-    const thumbFetchPromises = imageFiles.map(f => fetchImageAsBlob(driveThumbUrl(f.id, "w400&crop=smart")));
-    thumbFetchPromises.forEach(p => preloadPromises.push(p));
 
     let textFetchPromise = null;
     let chosenTextFile = null;
@@ -310,18 +301,6 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
     const settled = await Promise.allSettled(preloadPromises);
     if (session !== activeLoadSession) return;
 
-    let coverBlobUrl = coverUrl;
-    if (coverFile) {
-      const coverResult = settled[0];
-      if (coverResult.status === "fulfilled") coverBlobUrl = coverResult.value;
-    }
-
-    const thumbBlobUrls = imageFiles.map((_, i) => {
-      const offset = coverFile ? 1 : 0;
-      const r = settled[offset + i];
-      return (r && r.status === "fulfilled") ? r.value : driveThumbUrl(imageFiles[i].id, "w400&crop=smart");
-    });
-
     const isBookView = !!options.isBook;
     const layoutConfig = getBookLayoutConfig();
 
@@ -332,9 +311,15 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
     if (coverFile) {
       const imgEl = document.createElement("img");
       imgEl.className = "book-cover";
-      imgEl.src = coverBlobUrl;
       imgEl.alt = "";
       imgEl.draggable = false;
+      coverContainer.classList.add("loading-cover");
+      imgEl.onload = () => {
+        imgEl.classList.add("loaded");
+        coverContainer.classList.remove("loading-cover");
+        coverContainer.classList.add("open");
+      };
+      imgEl.src = coverUrl;
       coverContainer.appendChild(imgEl);
     }
 
@@ -381,29 +366,45 @@ async function loadFolder(folderId, options = { isBook: false, showText: true })
     }
 
     container.innerHTML = "";
+    container.classList.add("loading-images");
+    let firstSpreadRevealed = false;
     imageFiles.forEach((file, idx) => {
       if (session !== activeLoadSession) return;
-      const blobSrc = thumbBlobUrls[idx];
+      const thumbSrc = driveThumbUrl(file.id, "w400&crop=smart");
       if (isBookView) {
         const img = document.createElement("img");
         img.className = "spread noclick";
-        img.src = blobSrc;
         img.alt = "";
         img.draggable = false;
-        coverContainer.classList.add("open");
+        img.onload = () => {
+          img.classList.add("loaded");
+          if (!coverFile && !firstSpreadRevealed) {
+            firstSpreadRevealed = true;
+            coverContainer.classList.remove("loading-cover");
+            coverContainer.classList.add("open");
+          }
+        };
+        img.src = thumbSrc;
         container.appendChild(img);
       } else {
         const tile = document.createElement("div");
         tile.className = "thumb";
         tile.dataset.index = String(idx);
-        tile.style.backgroundImage = `url(${blobSrc})`;
         tile.onclick = () => openLightbox(idx);
+        const tileImg = new Image();
+        tileImg.onload = () => {
+          tile.style.backgroundImage = `url(${thumbSrc})`;
+          tile.classList.add("loaded");
+        };
+        tileImg.src = thumbSrc;
         container.appendChild(tile);
       }
     });
+    requestAnimationFrame(() => container.classList.remove("loading-images"));
 
     if (isBookView && layoutConfig.splitInfo && textRestPart) {
       const restDescContainer = document.createElement("div");
+      restDescContainer.id = "description-container-rest";
       restDescContainer.className = "description-container";
       renderTextIntoContainer(textRestPart, restDescContainer);
       allcontainers.appendChild(restDescContainer);
@@ -468,7 +469,7 @@ function populateInfoLinksForFile(file) {
 function getLightboxBlobUrl(index) {
   const file = currentImages[index];
   if (!file) return Promise.resolve(null);
-  const url = driveThumbUrl(file.id, "w1200");
+  const url = driveExportUrl(file.id);
   return fetchImageAsBlob(url);
 }
 
@@ -581,6 +582,21 @@ function toggleSubfolderNav(folderName, targetNavEl, staticEl, otherNavEl) {
 }
 
 async function init() {
+  const style = document.createElement("style");
+  style.textContent = `
+    .thumb { opacity: 0; transition: opacity 0.3s ease; }
+    .thumb.loaded { opacity: 1; }
+    #image-container.loading-images { opacity: 0; }
+    #image-container { transition: opacity 0.2s ease; }
+    img.spread { opacity: 0; transition: opacity 0.35s ease; }
+    img.spread.loaded { opacity: 1; }
+    img.book-cover { opacity: 0; transition: opacity 0.35s ease; }
+    img.book-cover.loaded { opacity: 1; }
+    #cover-container { transition: opacity 0.2s ease; }
+    #cover-container.loading-cover { opacity: 0; }
+  `;
+  document.head.appendChild(style);
+
   await buildRootFolderMap();
 
   if (staticPortfolio) {
