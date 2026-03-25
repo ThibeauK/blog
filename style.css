@@ -308,7 +308,7 @@ blockquote {
 #tekstblok {
     width: 100% !important;
     height: fit-content !important;
-    margin-top: 5em;
+    margin: 5em 0;
 }
 
 #tekstblok em {
