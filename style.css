@@ -378,6 +378,24 @@ button {
     font-size: 20px;
 }
 
+.nav-item.active {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+#nav-info.active {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.drive-folder.active {
+    font-weight: bold;
+    color: black;
+    border-left: 1px solid black;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
 button:hover {
     cursor: pointer;
 }

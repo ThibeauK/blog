@@ -42,6 +42,7 @@ function driveThumbUrl(id, size) {
   return `https://drive.google.com/thumbnail?id=${id}&sz=${size}`;
 }
 
+
 function toggleNav(nav) {
   const hamburger = document.getElementById("hamburger");
   if (nav && nav.style) {
@@ -52,6 +53,11 @@ function toggleNav(nav) {
   } else {
     hamburger.classList.add('hoverstate');
   }
+}
+
+function setActiveNav(el) {
+    document.querySelectorAll('.nav-item.active, .drive-folder.active').forEach(e => e.classList.remove('active'));
+    if (el) el.classList.add('active');
 }
 
 function removeInfo() {
@@ -130,10 +136,11 @@ async function showSubfolders(parentId, targetNavEl, options = {}, loadId = null
       d.className = "drive-folder";
       d.textContent = stripNumberPrefix(folder.name);
       d.onclick = () => {
-        const newLoadId = ++navLoadCounter;
-        targetNavEl.dataset.loadId = String(newLoadId);
-        loadFolder(folder.id, options);
-        toggleNav(nav);
+    const newLoadId = ++navLoadCounter;
+    targetNavEl.dataset.loadId = String(newLoadId);
+    setActiveNav(d);
+    loadFolder(folder.id, options);
+    toggleNav(nav);
       };
       targetNavEl.appendChild(d);
     });
@@ -587,6 +594,7 @@ async function init() {
       if (allcontainers) allcontainers.classList.remove("close");
       loadFolder(ROOT_FOLDER_ID, { isBook: false, showText: false });
       toggleNav(nav);
+      setActiveNav(staticPortfolio);
     };
   }
 
@@ -604,6 +612,7 @@ async function init() {
 
   if (staticInfo) {
     staticInfo.onclick = () => {
+      setActiveNav(staticInfo.closest('.nav-item'));
       removeInfo();
       if (driveNavProjects) driveNavProjects.innerHTML = "";
       if (driveNavBooks) driveNavBooks.innerHTML = "";
