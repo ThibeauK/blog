@@ -107,7 +107,10 @@ async function fetchTextFileContent(fileId) {
     headers: {
       "Referer": window.location.origin
     }
-});
+  });
+  if (!res.ok) throw new Error(`Failed to fetch text file ${fileId}: ${res.status}`);
+  return res.text();
+}
 
 async function buildRootFolderMap() {
   try {
