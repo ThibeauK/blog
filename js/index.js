@@ -93,16 +93,21 @@ async function driveFetch(queryParams) {
     ...queryParams
   });
   const url = `https://www.googleapis.com/drive/v3/files?${params.toString()}`;
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: {
+      "Referer": window.location.origin
+    }
+  });
   return res.json();
 }
 
 async function fetchTextFileContent(fileId) {
   const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch text file ${fileId}: ${res.status}`);
-  return res.text();
-}
+  const res = await fetch(url, {
+    headers: {
+      "Referer": window.location.origin
+    }
+});
 
 async function buildRootFolderMap() {
   try {
@@ -634,8 +639,8 @@ async function init() {
         <div id="logos">
   <div id="logo-links">
     <div>
-    <img src="logo-tom.jpg" alt="logo Tom D'haenens" class="logo">
-     <img src="foto-tom.jpg" alt="foto Tom D'haenens" id="pfp">
+    <img src="logo-images/logo-tom.jpg" alt="logo Tom D'haenens" class="logo">
+     <img src="logo-images/foto-tom.jpg" alt="foto Tom D'haenens" id="pfp">
      <h6>Belgium-based photographer working in more <br> than 30 countries worldwide.</h6>
      <p>School of Arts Ghent
      <br>Baltimore School of Arts USA</p>
@@ -660,7 +665,7 @@ async function init() {
 
   <div id="logo-rechts">
     <div>
-      <img src="logo-vv.jpg" alt="logo View&Vision" class="logo">
+      <img src="logo-images/logo-vv.jpg" alt="logo View&Vision" class="logo">
       <p>
       View&Vision Publishers specialiseert zich in het creëren en publiceren van hoogwaardige fotoboeken voor de industrie. Met een sterke focus op visuele storytelling brengt Viewvision de wereld van techniek, productie en industriële innovatie op een unieke en inspirerende manier in beeld.
 Door middel van krachtige fotografie en zorgvuldig vormgegeven publicaties documenteert Viewvision het vakmanschap, de mensen en de processen achter industriële bedrijven. Elk project wordt ontwikkeld met oog voor detail, kwaliteit en authenticiteit, waardoor de publicaties niet alleen informatief zijn, maar ook esthetisch aantrekkelijk.
@@ -733,3 +738,5 @@ Photography is literally in D'haenens' genes. As a child he was fascinated by th
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
+// CODE BY THIBEAU KINDT //
